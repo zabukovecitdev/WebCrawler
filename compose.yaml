@@ -3,7 +3,7 @@ services:
     image: samobot
     build:
       context: .
-      dockerfile: SamoBot/Dockerfile
+      dockerfile: src/SamoBot/Dockerfile
     environment:
       - RabbitMQ__HostName=rabbitmq
     depends_on:
