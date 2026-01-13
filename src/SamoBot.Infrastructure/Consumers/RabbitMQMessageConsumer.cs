@@ -24,7 +24,7 @@ public class RabbitMQMessageConsumer : IMessageConsumer
         _options = options.Value;
     }
 
-    public Task StartAsync(CancellationToken cancellationToken)
+    public Task StartAsync(CancellationToken cancellationToken = default)
     {
         var factory = new ConnectionFactory
         {
@@ -48,11 +48,11 @@ public class RabbitMQMessageConsumer : IMessageConsumer
         _logger.LogInformation("RabbitMQ consumer connected. Queue: {QueueName}", _options.QueueName);
 
         _consumer = new EventingBasicConsumer(_channel);
-        _consumer.Received += (model, ea) =>
+        _consumer.Received += (model, args) =>
         {
-            var body = ea.Body.ToArray();
+            var body = args.Body.ToArray();
             var message = Encoding.UTF8.GetString(body);
-            var routingKey = ea.RoutingKey;
+            var routingKey = args.RoutingKey;
 
             _logger.LogDebug("Received message from RabbitMQ. RoutingKey: {RoutingKey}, Message: {Message}",
                 routingKey, message);
@@ -63,13 +63,14 @@ public class RabbitMQMessageConsumer : IMessageConsumer
                 RoutingKey = routingKey
             });
 
-            _channel.BasicAck(ea.DeliveryTag, multiple: false);
+            _channel.BasicAck(args.DeliveryTag, multiple: false);
         };
 
         _channel.BasicConsume(
             queue: _options.QueueName,
             autoAck: false,
-            consumer: _consumer);
+            consumer: _consumer
+            );
 
         return Task.CompletedTask;
     }
@@ -78,7 +79,8 @@ public class RabbitMQMessageConsumer : IMessageConsumer
     {
         _channel?.Close();
         _connection?.Close();
-        _logger.LogInformation("RabbitMQ consumer stopped.");
+        
+        _logger.LogInformation("RabbitMQ consumer stopped");
         
         return Task.CompletedTask;
     }
