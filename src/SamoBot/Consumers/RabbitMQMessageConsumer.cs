@@ -1,10 +1,10 @@
+using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using System.Text;
 
-namespace SamoBot;
+namespace SamoBot.Consumers;
 
 public class RabbitMQMessageConsumer : IMessageConsumer
 {
@@ -72,11 +72,12 @@ public class RabbitMQMessageConsumer : IMessageConsumer
         return Task.CompletedTask;
     }
 
-    public Task StopAsync(CancellationToken cancellationToken)
+    public Task StopAsync(CancellationToken cancellationToken = default)
     {
         _channel?.Close();
         _connection?.Close();
         _logger.LogInformation("RabbitMQ consumer stopped.");
+        
         return Task.CompletedTask;
     }
 
