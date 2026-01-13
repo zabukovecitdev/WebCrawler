@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SamoBot.Abstractions;
+using SamoBot.Services;
+using SamoBot.Utilities;
 
 namespace SamoBot.Workers;
 
@@ -8,16 +10,13 @@ public class MessageConsumerWorker : BackgroundService
 {
     private readonly ILogger<MessageConsumerWorker> _logger;
     private readonly IMessageConsumer _messageConsumer;
-    private readonly IUrlCleanerService _urlCleanerService;
 
     public MessageConsumerWorker(
         ILogger<MessageConsumerWorker> logger,
-        IMessageConsumer messageConsumer,
-        IUrlCleanerService urlCleanerService)
+        IMessageConsumer messageConsumer)
     {
         _logger = logger;
         _messageConsumer = messageConsumer;
-        _urlCleanerService = urlCleanerService;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -64,16 +63,16 @@ public class MessageConsumerWorker : BackgroundService
 
     private async Task ProcessMessageAsync(string message, CancellationToken cancellationToken = default)
     {
-        var parsed = _urlCleanerService.Clean(message);
+        var parsed = UrlNormalizer.TryClean(message, out var url);
 
-        if (parsed.IsFailed)
+        if (parsed)
         {
             _logger.LogWarning("Message is not a valid URL: {Message}", message);
             
             return;
         }
         
-        _logger.LogInformation("Processing URL: {Url}", parsed.Value);
+        _logger.LogInformation("Processing URL: {Url}", url);
 
         await Task.CompletedTask;
     }

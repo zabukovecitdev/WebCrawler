@@ -1,21 +1,40 @@
 using System.Web;
 using FluentResults;
 
-namespace SamoBot.Services;
+namespace SamoBot.Utilities;
 
-public static class UrlCleanerService
+public static class UrlNormalizer
 {
     public static Result<string> Clean(string url)
     {
-        if (!Uri.TryCreate(url, UriKind.Relative, out var cleanedUri))
+        if (string.IsNullOrWhiteSpace(url))
         {
             return Result.Fail("Invalid URL");
         }
-        
+
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var cleanedUri))
+        {
+            return Result.Fail("Invalid URL");
+        }
+
         return Result.Ok(cleanedUri.Normalize());
     }
+
+    public static bool TryClean(string url, out string? cleanedUrl)
+    {
+        if (string.IsNullOrWhiteSpace(url) || !Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            cleanedUrl = null;
+
+            return false;
+        }
+
+        cleanedUrl = uri.Normalize();
+        
+        return true;
+    }
     
-    public static string Normalize(this Uri uri)
+    private static string Normalize(this Uri uri)
     {
         var builder = new UriBuilder(uri)
         {
@@ -32,12 +51,14 @@ public static class UrlCleanerService
 
         var path = builder.Path;
         if (path.Length > 1 && path.EndsWith("/"))
+        {
             builder.Path = path.TrimEnd('/');
+        }
 
         if (!string.IsNullOrEmpty(builder.Query))
         {
             var queryParameters = HttpUtility.ParseQueryString(builder.Query);
-            
+
             var keys = queryParameters.AllKeys
                 .Where(key => key != null)
                 .OrderBy(key => key, StringComparer.InvariantCultureIgnoreCase);

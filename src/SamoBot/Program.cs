@@ -5,7 +5,6 @@ using Microsoft.Extensions.Logging;
 using SamoBot;
 using SamoBot.Abstractions;
 using SamoBot.Consumers;
-using SamoBot.Services;
 using SamoBot.Workers;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -22,7 +21,6 @@ builder.Services.Configure<MessageBrokerOptions>(
 builder.Services.Configure<RabbitMQOptions>(
     builder.Configuration.GetSection(RabbitMQOptions.SectionName));
 
-builder.Services.AddScoped<IUrlCleanerService, UrlCleanerService>();
 builder.Services.AddSingleton<IMessageConsumer, RabbitMQMessageConsumer>();
 builder.Services.AddHostedService<MessageConsumerWorker>();
 
