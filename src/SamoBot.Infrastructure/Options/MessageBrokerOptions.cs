@@ -1,4 +1,4 @@
-namespace SamoBot;
+namespace SamoBot.Infrastructure.Options;
 
 public class MessageBrokerOptions
 {

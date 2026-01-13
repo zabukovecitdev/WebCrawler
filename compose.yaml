@@ -1,4 +1,18 @@
 services:
+  migrations:
+    image: samobot-migrations
+    build:
+      context: .
+      dockerfile: src/SamoBot.Migrations/Dockerfile
+    environment:
+      - Database__ConnectionString=Host=postgres;Port=5432;Database=samobot;Username=samobot;Password=samobot
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - frontend
+    restart: "no"
+
   samobot:
     image: samobot
     build:
@@ -6,9 +20,14 @@ services:
       dockerfile: src/SamoBot/Dockerfile
     environment:
       - RabbitMQ__HostName=rabbitmq
+      - Database__ConnectionString=Host=postgres;Port=5432;Database=samobot;Username=samobot;Password=samobot
     depends_on:
       rabbitmq:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
     networks:
       - frontend
 
@@ -31,8 +50,28 @@ services:
     networks:
       - frontend
 
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: samobot
+      POSTGRES_USER: samobot
+      POSTGRES_PASSWORD: samobot
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U samobot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - frontend
+
 volumes:
   rabbitmq_data:
+  postgres_data:
 
 networks:
   frontend:

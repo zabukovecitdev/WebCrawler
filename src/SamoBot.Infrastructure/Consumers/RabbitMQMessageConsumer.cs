@@ -3,9 +3,10 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using SamoBot.Abstractions;
+using SamoBot.Infrastructure.Abstractions;
+using SamoBot.Infrastructure.Options;
 
-namespace SamoBot.Consumers;
+namespace SamoBot.Infrastructure.Consumers;
 
 public class RabbitMQMessageConsumer : IMessageConsumer
 {

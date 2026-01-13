@@ -1,4 +1,4 @@
-namespace SamoBot.Abstractions;
+namespace SamoBot.Infrastructure.Abstractions;
 
 public interface IMessageConsumer : IDisposable
 {

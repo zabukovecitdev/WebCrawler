@@ -49,11 +49,8 @@ public static class UrlNormalizer
             builder.Port = -1;
         }
 
-        var path = builder.Path;
-        if (path.Length > 1 && path.EndsWith("/"))
-        {
-            builder.Path = path.TrimEnd('/');
-        }
+        // Keep trailing slashes as-is for web crawler accuracy
+        // Some sites treat /page and /page/ as different resources
 
         if (!string.IsNullOrEmpty(builder.Query))
         {

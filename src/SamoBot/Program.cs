@@ -2,9 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SamoBot;
-using SamoBot.Abstractions;
-using SamoBot.Consumers;
+using SamoBot.Infrastructure;
 using SamoBot.Workers;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -15,13 +13,7 @@ builder.Configuration
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables();
 
-builder.Services.Configure<MessageBrokerOptions>(
-    builder.Configuration.GetSection(MessageBrokerOptions.SectionName));
-
-builder.Services.Configure<RabbitMQOptions>(
-    builder.Configuration.GetSection(RabbitMQOptions.SectionName));
-
-builder.Services.AddSingleton<IMessageConsumer, RabbitMQMessageConsumer>();
+builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHostedService<MessageConsumerWorker>();
 
 builder.Logging.ClearProviders();
