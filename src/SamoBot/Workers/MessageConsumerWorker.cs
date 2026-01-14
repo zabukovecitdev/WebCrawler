@@ -83,6 +83,7 @@ public class MessageConsumerWorker : BackgroundService
         using var scope = _serviceScopeFactory.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IDiscoveredUrlRepository>();
 
+        // TODO: This check could be more optimised with Bloom filter
         var exists = await repository.Exists(normalizedUrl.AbsoluteUri, cancellationToken);
         if (exists)
         {
