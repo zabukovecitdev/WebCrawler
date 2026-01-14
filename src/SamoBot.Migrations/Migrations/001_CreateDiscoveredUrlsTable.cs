@@ -10,9 +10,16 @@ public class CreateDiscoveredUrlsTable : Migration
     {
         Create.Table(TableNames.Database.DiscoveredUrls)
             .WithColumn("Id").AsInt32().PrimaryKey().Identity()
+            .WithColumn("Host").AsString(2048).NotNullable()
             .WithColumn("Url").AsString(2048).NotNullable()
             .WithColumn("NormalizedUrl").AsString(2048).Nullable()
-            .WithColumn("DiscoveredAt").AsDateTime().NotNullable().WithDefault(SystemMethods.CurrentDateTime);
+            .WithColumn("Status").AsString(20).NotNullable().WithDefaultValue("Idle")
+            .WithColumn("LastCrawlAt").AsDateTimeOffset().Nullable()
+            .WithColumn("NextCrawlAt").AsDateTimeOffset().NotNullable().WithDefault(SystemMethods.CurrentDateTime)
+            .WithColumn("FailCount").AsInt16().NotNullable().WithDefaultValue(0)
+            .WithColumn("LastStatus").AsInt16().Nullable()
+            .WithColumn("DiscoveredAt").AsDateTime().NotNullable().WithDefault(SystemMethods.CurrentDateTime)
+            .WithColumn("Priority").AsInt16().NotNullable().WithDefaultValue(0);
 
         Create.Index("IX_DiscoveredUrls_NormalizedUrl")
             .OnTable(TableNames.Database.DiscoveredUrls)

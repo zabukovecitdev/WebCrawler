@@ -1,9 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Samobot.Domain.Models;
+using SamoBot.Extensions;
 using SamoBot.Infrastructure.Abstractions;
 using SamoBot.Infrastructure.Data;
-using SamoBot.Infrastructure.Models;
 using SamoBot.Utilities;
 
 namespace SamoBot.Workers;
@@ -68,11 +69,11 @@ public class MessageConsumerWorker : BackgroundService
         }
     }
 
-    private async Task ProcessMessageAsync(string message, CancellationToken cancellationToken = default)
+    private async Task ProcessMessageAsync(string dirtyUrl, CancellationToken cancellationToken = default)
     {
-        if (!UrlNormalizer.TryClean(message, out var normalizedUrl) || normalizedUrl == null)
+        if (!UrlNormalizer.TryClean(dirtyUrl, out var normalizedUrl) || normalizedUrl == null)
         {
-            _logger.LogWarning("Message is not a valid URL: {Message}", message);
+            _logger.LogWarning("Message is not a valid URL: {Message}", dirtyUrl);
             
             return;
         }
@@ -82,7 +83,7 @@ public class MessageConsumerWorker : BackgroundService
         using var scope = _serviceScopeFactory.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IDiscoveredUrlRepository>();
 
-        var exists = await repository.ExistsAsync(normalizedUrl, cancellationToken);
+        var exists = await repository.Exists(normalizedUrl.AbsoluteUri, cancellationToken);
         if (exists)
         {
             _logger.LogInformation("URL already exists in database: {Url}", normalizedUrl);
@@ -92,12 +93,14 @@ public class MessageConsumerWorker : BackgroundService
 
         var discoveredUrl = new DiscoveredUrl
         {
-            Url = message,
-            NormalizedUrl = normalizedUrl,
-            DiscoveredAt = _timeProvider.GetUtcNow()
+            Url = dirtyUrl,
+            Host = normalizedUrl.Host,
+            NormalizedUrl = normalizedUrl.AbsoluteUri,
+            DiscoveredAt = _timeProvider.GetUtcNow(),
+            Priority = normalizedUrl.GetUrlSegmentsLength() + normalizedUrl.GetQueryParameterCount()
         };
 
-        var id = await repository.InsertAsync(discoveredUrl, cancellationToken);
+        var id = await repository.Insert(discoveredUrl, cancellationToken);
         
         _logger.LogInformation("Inserted discovered URL with ID: {Id}, URL: {Url}", id, normalizedUrl);
     }

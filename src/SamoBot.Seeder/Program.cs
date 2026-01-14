@@ -53,7 +53,9 @@ var port = int.Parse(configuration["RabbitMQ:Port"] ?? "5672");
 var userName = configuration["RabbitMQ:UserName"] ?? "guest";
 var password = configuration["RabbitMQ:Password"] ?? "guest";
 var virtualHost = configuration["RabbitMQ:VirtualHost"] ?? "/";
-var queueName = configuration["RabbitMQ:QueueName"] ?? "urls_to_crawl";
+var exchangeName = configuration["RabbitMQ:ExchangeName"] ?? "url_discovery";
+var exchangeType = configuration["RabbitMQ:ExchangeType"] ?? "topic";
+var routingKey = configuration["RabbitMQ:RoutingKey"] ?? "url.discovered";
 
 var count = args.Length > 0 && int.TryParse(args[0], out var parsedCount) ? parsedCount : 10;
 var baseUrl = args.Length > 1 ? args[1] : null;
@@ -74,14 +76,16 @@ try
     using var connection = factory.CreateConnection();
     using var channel = connection.CreateModel();
 
-    channel.QueueDeclare(
-        queue: queueName,
+    // Declare exchange
+    channel.ExchangeDeclare(
+        exchange: exchangeName,
+        type: exchangeType,
         durable: true,
-        exclusive: false,
         autoDelete: false,
         arguments: null);
 
-    logger.LogInformation("Publishing {Count} URLs to queue '{QueueName}'", count, queueName);
+    logger.LogInformation("Publishing {Count} URLs to exchange '{ExchangeName}' with routing key '{RoutingKey}'", 
+        count, exchangeName, routingKey);
 
     var faker = new Faker();
     var published = 0;
@@ -92,8 +96,8 @@ try
         var body = Encoding.UTF8.GetBytes(url);
 
         channel.BasicPublish(
-            exchange: string.Empty,
-            routingKey: queueName,
+            exchange: exchangeName,
+            routingKey: routingKey,
             basicProperties: null,
             body: body);
 
@@ -105,7 +109,8 @@ try
         }
     }
 
-    logger.LogInformation("Successfully published {Published} URLs to queue '{QueueName}'", published, queueName);
+    logger.LogInformation("Successfully published {Published} URLs to exchange '{ExchangeName}' with routing key '{RoutingKey}'", 
+        published, exchangeName, routingKey);
 }
 catch (Exception ex)
 {

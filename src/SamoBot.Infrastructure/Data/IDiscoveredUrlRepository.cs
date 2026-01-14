@@ -1,9 +1,9 @@
-using SamoBot.Infrastructure.Models;
+using Samobot.Domain.Models;
 
 namespace SamoBot.Infrastructure.Data;
 
 public interface IDiscoveredUrlRepository : IRepository<DiscoveredUrl>
 {
-    Task<DiscoveredUrl?> GetByUrlAsync(string url, CancellationToken cancellationToken = default);
-    Task<bool> ExistsAsync(string url, CancellationToken cancellationToken = default);
+    Task<DiscoveredUrl?> GetByUrl(string url, CancellationToken cancellationToken = default);
+    Task<bool> Exists(string url, CancellationToken cancellationToken = default);
 }

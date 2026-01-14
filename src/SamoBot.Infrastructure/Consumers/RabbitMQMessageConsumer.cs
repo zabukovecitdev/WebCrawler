@@ -38,6 +38,13 @@ public class RabbitMQMessageConsumer : IMessageConsumer
         _connection = factory.CreateConnection();
         _channel = _connection.CreateModel();
 
+        _channel.ExchangeDeclare(
+            exchange: _options.ExchangeName,
+            type: _options.ExchangeType,
+            durable: _options.Durable,
+            autoDelete: false,
+            arguments: null);
+
         _channel.QueueDeclare(
             queue: _options.QueueName,
             durable: _options.Durable,
@@ -45,7 +52,14 @@ public class RabbitMQMessageConsumer : IMessageConsumer
             autoDelete: _options.AutoDelete,
             arguments: null);
 
-        _logger.LogInformation("RabbitMQ consumer connected. Queue: {QueueName}", _options.QueueName);
+        _channel.QueueBind(
+            queue: _options.QueueName,
+            exchange: _options.ExchangeName,
+            routingKey: _options.RoutingKey);
+
+        _logger.LogInformation(
+            "RabbitMQ consumer connected. Exchange: {ExchangeName} ({ExchangeType}), Queue: {QueueName}, RoutingKey: {RoutingKey}",
+            _options.ExchangeName, _options.ExchangeType, _options.QueueName, _options.RoutingKey);
 
         _consumer = new EventingBasicConsumer(_channel);
         _consumer.Received += (model, args) =>
