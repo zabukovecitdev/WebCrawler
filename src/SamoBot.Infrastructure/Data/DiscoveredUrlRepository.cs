@@ -2,19 +2,16 @@ using System.Data;
 using Dapper;
 using Samobot.Domain.Enums;
 using Samobot.Domain.Models;
-using SamoBot.Infrastructure.Extensions;
-using SqlKata;
+using SamoBot.Infrastructure.Constants;
 using SqlKata.Execution;
 
 namespace SamoBot.Infrastructure.Data;
 
 public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider timeProvider) : IDiscoveredUrlRepository
 {
-    private const string TableName = "DiscoveredUrls";
-
     public async Task<DiscoveredUrl?> GetById(int id, CancellationToken cancellationToken = default)
     {
-        var result = await queryFactory.Query(TableName)
+        var result = await queryFactory.Query(TableNames.Database.DiscoveredUrls)
             .Where(nameof(DiscoveredUrl.Id), id)
             .FirstOrDefaultAsync<DiscoveredUrl>(cancellationToken: cancellationToken);
 
@@ -23,13 +20,13 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
 
     public async Task<IEnumerable<DiscoveredUrl>> GetAll(CancellationToken cancellationToken = default)
     {
-        return await queryFactory.Query(TableName)
+        return await queryFactory.Query(TableNames.Database.DiscoveredUrls)
             .GetAsync<DiscoveredUrl>(cancellationToken: cancellationToken);
     }
 
     public async Task<int> Insert(DiscoveredUrl entity, CancellationToken cancellationToken = default)
     {
-        var id = await queryFactory.Query(TableName)
+        var id = await queryFactory.Query(TableNames.Database.DiscoveredUrls)
             .InsertGetIdAsync<int>(new
             {
                 entity.Host,
@@ -44,7 +41,7 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
 
     public async Task<bool> Update(DiscoveredUrl entity, CancellationToken cancellationToken = default)
     {
-        var affected = await queryFactory.Query(TableName)
+        var affected = await queryFactory.Query(TableNames.Database.DiscoveredUrls)
             .Where(nameof(DiscoveredUrl.Id), entity.Id)
             .UpdateAsync(entity, cancellationToken: cancellationToken);
 
@@ -53,7 +50,7 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
 
     public async Task<bool> Delete(int id, CancellationToken cancellationToken = default)
     {
-        var affected = await queryFactory.Query(TableName)
+        var affected = await queryFactory.Query(TableNames.Database.DiscoveredUrls)
             .Where(nameof(DiscoveredUrl.Id), id)
             .DeleteAsync(cancellationToken: cancellationToken);
 
@@ -62,7 +59,7 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
 
     public async Task<DiscoveredUrl?> GetByUrl(string url, CancellationToken cancellationToken = default)
     {
-        var result = await queryFactory.Query(TableName)
+        var result = await queryFactory.Query(TableNames.Database.DiscoveredUrls)
             .Where(nameof(DiscoveredUrl.Url), url)
             .OrWhere(nameof(DiscoveredUrl.NormalizedUrl), url)
             .FirstOrDefaultAsync<DiscoveredUrl>(cancellationToken: cancellationToken);
@@ -72,7 +69,7 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
 
     public async Task<bool> Exists(string url, CancellationToken cancellationToken = default)
     {
-        return await queryFactory.Query(TableName)
+        return await queryFactory.Query(TableNames.Database.DiscoveredUrls)
             .Where(nameof(DiscoveredUrl.Url), url)
             .OrWhere(nameof(DiscoveredUrl.NormalizedUrl), url)
             .ExistsAsync(cancellationToken: cancellationToken);
@@ -82,7 +79,7 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
         CancellationToken cancellationToken = default)
     {
         // TODO This will fail ehen there are multiple workers. Needs FOR UPDATE SKIP LOCKED
-        return await queryFactory.Query(TableName)
+        return await queryFactory.Query(TableNames.Database.DiscoveredUrls)
             .Select()
             .Where(nameof(DiscoveredUrl.Status), nameof(UrlStatus.Idle))
             .Where(q => q
@@ -106,15 +103,14 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
             return;
         }
 
-        // Use Dapper directly with parameterized query for reliability
         var sql = $@"
-            UPDATE ""{TableName}""
+            UPDATE ""{TableNames.Database.DiscoveredUrls}""
             SET ""Status"" = @Status
             WHERE ""Id"" = ANY(@Ids)";
 
         var parameters = new
         {
-            Status = UrlStatus.InFlight.ToString(),
+            Status = nameof(UrlStatus.InFlight),
             Ids = idList.ToArray()
         };
 
