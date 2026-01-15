@@ -14,6 +14,7 @@ public class UrlScheduler : IUrlScheduler, IDisposable
     private readonly ILogger<UrlScheduler> _logger;
     private readonly RabbitMQConnectionOptions _connectionOptions;
     private readonly ScheduledUrlQueueOptions _queueOptions;
+    private readonly TimeProvider _timeProvider;
     private IConnection? _connection;
     private IModel? _channel;
     private bool _initialized = false;
@@ -21,11 +22,13 @@ public class UrlScheduler : IUrlScheduler, IDisposable
     public UrlScheduler(
         ILogger<UrlScheduler> logger,
         IOptions<RabbitMQConnectionOptions> connectionOptions,
-        IOptions<ScheduledUrlQueueOptions> queueOptions)
+        IOptions<ScheduledUrlQueueOptions> queueOptions,
+        TimeProvider timeProvider)
     {
         _logger = logger;
         _connectionOptions = connectionOptions.Value;
         _queueOptions = queueOptions.Value;
+        _timeProvider = timeProvider;
     }
 
     private void Initialize()
@@ -89,6 +92,8 @@ public class UrlScheduler : IUrlScheduler, IDisposable
         }
 
         var published = 0;
+        var unixTimestamp = _timeProvider.GetUtcNow().ToUnixTimeSeconds();
+        
         foreach (var url in urlList)
         {
             try
@@ -96,10 +101,16 @@ public class UrlScheduler : IUrlScheduler, IDisposable
                 var json = JsonSerializer.Serialize(url);
                 var body = Encoding.UTF8.GetBytes(json);
 
-                _channel!.BasicPublish(
+                var properties = _channel!.CreateBasicProperties();
+                properties.Headers = new Dictionary<string, object>
+                {
+                    { "version", unixTimestamp }
+                };
+
+                _channel.BasicPublish(
                     exchange: _queueOptions.ExchangeName,
                     routingKey: _queueOptions.RoutingKey,
-                    basicProperties: null,
+                    basicProperties: properties,
                     body: body);
 
                 published++;
