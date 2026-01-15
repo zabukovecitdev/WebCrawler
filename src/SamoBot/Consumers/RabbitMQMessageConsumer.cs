@@ -5,8 +5,9 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using SamoBot.Infrastructure.Abstractions;
 using SamoBot.Infrastructure.Options;
+using SamoBot.Infrastructure.RabbitMQ;
 
-namespace SamoBot.Infrastructure.Consumers;
+namespace SamoBot.Consumers;
 
 public class RabbitMQMessageConsumer : IMessageConsumer
 {
@@ -43,24 +44,7 @@ public class RabbitMQMessageConsumer : IMessageConsumer
         _connection = factory.CreateConnection();
         _channel = _connection.CreateModel();
 
-        _channel.ExchangeDeclare(
-            exchange: _queueOptions.ExchangeName,
-            type: _queueOptions.ExchangeType,
-            durable: _queueOptions.Durable,
-            autoDelete: false,
-            arguments: null);
-
-        _channel.QueueDeclare(
-            queue: _queueOptions.QueueName,
-            durable: _queueOptions.Durable,
-            exclusive: _queueOptions.Exclusive,
-            autoDelete: _queueOptions.AutoDelete,
-            arguments: null);
-
-        _channel.QueueBind(
-            queue: _queueOptions.QueueName,
-            exchange: _queueOptions.ExchangeName,
-            routingKey: _queueOptions.RoutingKey);
+        RabbitMQSetupHelper.DeclareExchangeAndQueue(_channel, _queueOptions, _logger);
 
         _logger.LogInformation(
             "RabbitMQ consumer connected. Exchange: {ExchangeName} ({ExchangeType}), Queue: {QueueName}, RoutingKey: {RoutingKey}",

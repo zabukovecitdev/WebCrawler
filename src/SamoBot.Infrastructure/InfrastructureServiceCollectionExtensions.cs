@@ -2,7 +2,6 @@ using System.Data;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SamoBot.Infrastructure.Abstractions;
-using SamoBot.Infrastructure.Consumers;
 using SamoBot.Infrastructure.Data;
 using SamoBot.Infrastructure.Database;
 using SamoBot.Infrastructure.Options;
@@ -44,7 +43,6 @@ public static class InfrastructureServiceCollectionExtensions
             return new QueryFactory(connection, compiler);
         });
 
-        services.AddSingleton<IMessageConsumer, RabbitMQMessageConsumer>();
         services.AddSingleton<IUrlScheduler, UrlScheduler>();
         services.AddScoped<IDiscoveredUrlRepository, DiscoveredUrlRepository>();
 

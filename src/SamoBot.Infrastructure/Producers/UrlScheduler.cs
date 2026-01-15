@@ -7,6 +7,7 @@ using Samobot.Domain.Models;
 using SamoBot.Infrastructure.Abstractions;
 using SamoBot.Infrastructure.Mapping;
 using SamoBot.Infrastructure.Options;
+using SamoBot.Infrastructure.RabbitMQ;
 
 namespace SamoBot.Infrastructure.Producers;
 
@@ -51,24 +52,7 @@ public class UrlScheduler : IUrlScheduler, IDisposable
         _connection = factory.CreateConnection();
         _channel = _connection.CreateModel();
 
-        _channel.ExchangeDeclare(
-            exchange: _queueOptions.ExchangeName,
-            type: _queueOptions.ExchangeType,
-            durable: _queueOptions.Durable,
-            autoDelete: false,
-            arguments: null);
-
-        _channel.QueueDeclare(
-            queue: _queueOptions.QueueName,
-            durable: _queueOptions.Durable,
-            exclusive: _queueOptions.Exclusive,
-            autoDelete: _queueOptions.AutoDelete,
-            arguments: null);
-
-        _channel.QueueBind(
-            queue: _queueOptions.QueueName,
-            exchange: _queueOptions.ExchangeName,
-            routingKey: _queueOptions.RoutingKey);
+        RabbitMQSetupHelper.DeclareExchangeAndQueue(_channel, _queueOptions, _logger);
 
         _initialized = true;
 

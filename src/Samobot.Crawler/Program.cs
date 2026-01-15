@@ -2,10 +2,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SamoBot.Consumers;
 using SamoBot.Infrastructure;
-using SamoBot.Infrastructure.Abstractions;
-using SamoBot.Workers;
+using Samobot.Crawler.Workers;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -16,8 +14,7 @@ builder.Configuration
     .AddEnvironmentVariables();
 
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddSingleton<IMessageConsumer, RabbitMQMessageConsumer>();
-builder.Services.AddHostedService<MessageConsumerWorker>();
+builder.Services.AddHostedService<CrawlerWorker>();
 
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
