@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -16,6 +16,7 @@
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.1" />
     <PackageReference Include="Npgsql" Version="10.0.1" />
     <PackageReference Include="RabbitMQ.Client" Version="6.8.1" />
+    <PackageReference Include="Riok.Mapperly" Version="4.0.0" />
     <PackageReference Include="SqlKata" Version="4.0.1" />
     <PackageReference Include="SqlKata.Execution" Version="4.0.1" />
   </ItemGroup>

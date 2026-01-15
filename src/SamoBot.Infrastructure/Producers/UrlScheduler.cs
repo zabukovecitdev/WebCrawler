@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using Samobot.Domain.Models;
 using SamoBot.Infrastructure.Abstractions;
+using SamoBot.Infrastructure.Mapping;
 using SamoBot.Infrastructure.Options;
 
 namespace SamoBot.Infrastructure.Producers;
@@ -91,14 +92,15 @@ public class UrlScheduler : IUrlScheduler, IDisposable
             return Task.CompletedTask;
         }
 
+        var scheduledUrls = UrlMapper.ToScheduledUrls(urlList).ToList();
         var published = 0;
         var unixTimestamp = _timeProvider.GetUtcNow().ToUnixTimeSeconds();
         
-        foreach (var url in urlList)
+        foreach (var scheduledUrl in scheduledUrls)
         {
             try
             {
-                var json = JsonSerializer.Serialize(url);
+                var json = JsonSerializer.Serialize(scheduledUrl);
                 var body = Encoding.UTF8.GetBytes(json);
 
                 var properties = _channel!.CreateBasicProperties();
@@ -117,7 +119,7 @@ public class UrlScheduler : IUrlScheduler, IDisposable
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to publish URL {Url} (ID: {Id})", url.Url, url.Id);
+                _logger.LogError(ex, "Failed to publish URL {Url} (ID: {Id})", scheduledUrl.Url, scheduledUrl.Id);
                 throw;
             }
         }
