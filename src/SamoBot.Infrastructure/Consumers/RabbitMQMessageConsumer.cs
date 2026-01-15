@@ -11,55 +11,60 @@ namespace SamoBot.Infrastructure.Consumers;
 public class RabbitMQMessageConsumer : IMessageConsumer
 {
     private readonly ILogger<RabbitMQMessageConsumer> _logger;
-    private readonly RabbitMQOptions _options;
+    private readonly RabbitMQConnectionOptions _connectionOptions;
+    private readonly DiscoveredUrlQueueOptions _queueOptions;
     private IConnection? _connection;
     private IModel? _channel;
     private EventingBasicConsumer? _consumer;
 
     public event EventHandler<MessageReceivedEventArgs>? MessageReceived;
 
-    public RabbitMQMessageConsumer(ILogger<RabbitMQMessageConsumer> logger, IOptions<RabbitMQOptions> options)
+    public RabbitMQMessageConsumer(
+        ILogger<RabbitMQMessageConsumer> logger,
+        IOptions<RabbitMQConnectionOptions> connectionOptions,
+        IOptions<DiscoveredUrlQueueOptions> queueOptions)
     {
         _logger = logger;
-        _options = options.Value;
+        _connectionOptions = connectionOptions.Value;
+        _queueOptions = queueOptions.Value;
     }
 
     public Task StartAsync(CancellationToken cancellationToken = default)
     {
         var factory = new ConnectionFactory
         {
-            HostName = _options.HostName,
-            Port = _options.Port,
-            UserName = _options.UserName,
-            Password = _options.Password,
-            VirtualHost = _options.VirtualHost
+            HostName = _connectionOptions.HostName,
+            Port = _connectionOptions.Port,
+            UserName = _connectionOptions.UserName,
+            Password = _connectionOptions.Password,
+            VirtualHost = _connectionOptions.VirtualHost
         };
 
         _connection = factory.CreateConnection();
         _channel = _connection.CreateModel();
 
         _channel.ExchangeDeclare(
-            exchange: _options.ExchangeName,
-            type: _options.ExchangeType,
-            durable: _options.Durable,
+            exchange: _queueOptions.ExchangeName,
+            type: _queueOptions.ExchangeType,
+            durable: _queueOptions.Durable,
             autoDelete: false,
             arguments: null);
 
         _channel.QueueDeclare(
-            queue: _options.QueueName,
-            durable: _options.Durable,
-            exclusive: _options.Exclusive,
-            autoDelete: _options.AutoDelete,
+            queue: _queueOptions.QueueName,
+            durable: _queueOptions.Durable,
+            exclusive: _queueOptions.Exclusive,
+            autoDelete: _queueOptions.AutoDelete,
             arguments: null);
 
         _channel.QueueBind(
-            queue: _options.QueueName,
-            exchange: _options.ExchangeName,
-            routingKey: _options.RoutingKey);
+            queue: _queueOptions.QueueName,
+            exchange: _queueOptions.ExchangeName,
+            routingKey: _queueOptions.RoutingKey);
 
         _logger.LogInformation(
             "RabbitMQ consumer connected. Exchange: {ExchangeName} ({ExchangeType}), Queue: {QueueName}, RoutingKey: {RoutingKey}",
-            _options.ExchangeName, _options.ExchangeType, _options.QueueName, _options.RoutingKey);
+            _queueOptions.ExchangeName, _queueOptions.ExchangeType, _queueOptions.QueueName, _queueOptions.RoutingKey);
 
         _consumer = new EventingBasicConsumer(_channel);
         _consumer.Received += (model, args) =>
@@ -81,7 +86,7 @@ public class RabbitMQMessageConsumer : IMessageConsumer
         };
 
         _channel.BasicConsume(
-            queue: _options.QueueName,
+            queue: _queueOptions.QueueName,
             autoAck: false,
             consumer: _consumer
             );

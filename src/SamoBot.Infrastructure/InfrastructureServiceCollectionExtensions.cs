@@ -6,6 +6,7 @@ using SamoBot.Infrastructure.Consumers;
 using SamoBot.Infrastructure.Data;
 using SamoBot.Infrastructure.Database;
 using SamoBot.Infrastructure.Options;
+using SamoBot.Infrastructure.Producers;
 using SqlKata.Compilers;
 using SqlKata.Execution;
 
@@ -17,8 +18,12 @@ public static class InfrastructureServiceCollectionExtensions
     {
         services.Configure<MessageBrokerOptions>(
             configuration.GetSection(MessageBrokerOptions.SectionName));
-        services.Configure<RabbitMQOptions>(
-            configuration.GetSection(RabbitMQOptions.SectionName));
+        services.Configure<RabbitMQConnectionOptions>(
+            configuration.GetSection(RabbitMQConnectionOptions.SectionName));
+        services.Configure<DiscoveredUrlQueueOptions>(
+            configuration.GetSection(DiscoveredUrlQueueOptions.SectionName));
+        services.Configure<ScheduledUrlQueueOptions>(
+            configuration.GetSection(ScheduledUrlQueueOptions.SectionName));
         services.Configure<DatabaseOptions>(
             configuration.GetSection(DatabaseOptions.SectionName));
 
@@ -40,6 +45,7 @@ public static class InfrastructureServiceCollectionExtensions
         });
 
         services.AddSingleton<IMessageConsumer, RabbitMQMessageConsumer>();
+        services.AddSingleton<IUrlScheduler, UrlScheduler>();
         services.AddScoped<IDiscoveredUrlRepository, DiscoveredUrlRepository>();
 
         return services;

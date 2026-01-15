@@ -48,14 +48,14 @@ using var loggerFactory = LoggerFactory.Create(builder =>
 
 var logger = loggerFactory.CreateLogger<Program>();
 
-var hostName = configuration["RabbitMQ:HostName"] ?? "localhost";
-var port = int.Parse(configuration["RabbitMQ:Port"] ?? "5672");
-var userName = configuration["RabbitMQ:UserName"] ?? "guest";
-var password = configuration["RabbitMQ:Password"] ?? "guest";
-var virtualHost = configuration["RabbitMQ:VirtualHost"] ?? "/";
-var exchangeName = configuration["RabbitMQ:ExchangeName"] ?? "url_discovery";
-var exchangeType = configuration["RabbitMQ:ExchangeType"] ?? "topic";
-var routingKey = configuration["RabbitMQ:RoutingKey"] ?? "url.discovered";
+var hostName = configuration["RabbitMQ:Connection:HostName"] ?? "localhost";
+var port = int.Parse(configuration["RabbitMQ:Connection:Port"] ?? "5672");
+var userName = configuration["RabbitMQ:Connection:UserName"] ?? "guest";
+var password = configuration["RabbitMQ:Connection:Password"] ?? "guest";
+var virtualHost = configuration["RabbitMQ:Connection:VirtualHost"] ?? "/";
+var exchangeName = configuration["RabbitMQ:DiscoveredUrlQueue:ExchangeName"] ?? "cs";
+var exchangeType = configuration["RabbitMQ:DiscoveredUrlQueue:ExchangeType"] ?? "topic";
+var routingKey = configuration["RabbitMQ:DiscoveredUrlQueue:RoutingKey"] ?? "url.discovered";
 
 var count = args.Length > 0 && int.TryParse(args[0], out var parsedCount) ? parsedCount : 10;
 var baseUrl = args.Length > 1 ? args[1] : null;
