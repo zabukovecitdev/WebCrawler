@@ -10,6 +10,7 @@ public class DiscoveredUrl
     public string? NormalizedUrl { get; set; }
     public UrlStatus Status { get; set; } = UrlStatus.None;
     public DateTimeOffset? LastCrawlAt { get; set; }
+    public DateTimeOffset? NextCrawlAt { get; set; }
     public uint FailCount { get; set; }
     public uint LastStatusCode { get; set; }
     public DateTimeOffset DiscoveredAt { get; set; }

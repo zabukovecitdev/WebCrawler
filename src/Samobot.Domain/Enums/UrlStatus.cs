@@ -1,5 +1,8 @@
+using System.Text.Json.Serialization;
+
 namespace Samobot.Domain.Enums;
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum UrlStatus
 {
     None = 0,

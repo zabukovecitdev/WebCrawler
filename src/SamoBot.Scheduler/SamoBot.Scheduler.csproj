@@ -16,7 +16,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="appsettings.json" />
+    <ProjectReference Include="..\SamoBot.Infrastructure\SamoBot.Infrastructure.csproj" />
+    <ProjectReference Include="..\Samobot.Domain\Samobot.Domain.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SamoBot\SamoBot.csproj" />
+  </ItemGroup>
+  
   
 </Project>

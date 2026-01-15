@@ -1,9 +1,14 @@
+using System.Data;
+using Dapper;
+using Samobot.Domain.Enums;
 using Samobot.Domain.Models;
+using SamoBot.Infrastructure.Extensions;
+using SqlKata;
 using SqlKata.Execution;
 
 namespace SamoBot.Infrastructure.Data;
 
-public class DiscoveredUrlRepository(QueryFactory queryFactory) : IDiscoveredUrlRepository
+public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider timeProvider) : IDiscoveredUrlRepository
 {
     private const string TableName = "DiscoveredUrls";
 
@@ -71,5 +76,50 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory) : IDiscoveredUrl
             .Where(nameof(DiscoveredUrl.Url), url)
             .OrWhere(nameof(DiscoveredUrl.NormalizedUrl), url)
             .ExistsAsync(cancellationToken: cancellationToken);
+    }
+
+    public async Task<IEnumerable<DiscoveredUrl>> GetReadyForCrawling(uint limit, IDbTransaction? transaction = null,
+        CancellationToken cancellationToken = default)
+    {
+        // TODO This will fail ehen there are multiple workers. Needs FOR UPDATE SKIP LOCKED
+        return await queryFactory.Query(TableName)
+            .Select()
+            .Where(nameof(DiscoveredUrl.Status), nameof(UrlStatus.Idle))
+            .Where(q => q
+                .WhereNull(nameof(DiscoveredUrl.NextCrawlAt))
+                .OrWhere(nameof(DiscoveredUrl.NextCrawlAt), "<=", timeProvider.GetUtcNow()))
+            .OrderByDesc(nameof(DiscoveredUrl.Priority))
+            .OrderBy(nameof(DiscoveredUrl.NextCrawlAt))
+            .Limit((int)limit).GetAsync<DiscoveredUrl>(transaction, cancellationToken: cancellationToken);
+    }
+
+    public async Task UpdateStatusToInFlight(IEnumerable<int> ids, IDbTransaction transaction, CancellationToken cancellationToken = default)
+    {
+        if (transaction?.Connection == null)
+        {
+            throw new InvalidOperationException("Transaction and connection must be provided");
+        }
+
+        var idList = ids.ToList();
+        if (idList.Count == 0)
+        {
+            return;
+        }
+
+        // Use Dapper directly with parameterized query for reliability
+        var sql = $@"
+            UPDATE ""{TableName}""
+            SET ""Status"" = @Status
+            WHERE ""Id"" = ANY(@Ids)";
+
+        var parameters = new
+        {
+            Status = UrlStatus.InFlight.ToString(),
+            Ids = idList.ToArray()
+        };
+
+        var command = new CommandDefinition(sql, parameters, transaction, cancellationToken: cancellationToken);
+        
+        await transaction.Connection.ExecuteAsync(command);
     }
 }
