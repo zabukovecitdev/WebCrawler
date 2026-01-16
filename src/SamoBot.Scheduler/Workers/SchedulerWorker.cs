@@ -9,17 +9,20 @@ namespace SamoBot.Scheduler.Workers;
 public class SchedulerWorker : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger<SchedulerWorker> _logger;
 
     public SchedulerWorker(
         IServiceProvider serviceProvider,
+        TimeProvider timeProvider,
         ILogger<SchedulerWorker> logger)
     {
         _serviceProvider = serviceProvider;
+        _timeProvider = timeProvider;
         _logger = logger;
     }
 
-    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Scheduler worker started.");
 
@@ -27,11 +30,11 @@ public class SchedulerWorker : BackgroundService
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                _logger.LogInformation("Scheduler worker running at: {Time}", DateTimeOffset.Now);
+                _logger.LogInformation("Scheduler worker running at: {Time}", _timeProvider.GetUtcNow());
                 
-                await ProcessUrlsReadyForCrawlingAsync(cancellationToken);
+                await ProcessUrlsReadyForCrawling(cancellationToken);
                 
-                await Task.Delay(TimeSpan.FromSeconds(60), cancellationToken);
+                await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
             }
         }
         catch (OperationCanceledException ex)
@@ -44,7 +47,7 @@ public class SchedulerWorker : BackgroundService
         }
     }
 
-    private async Task ProcessUrlsReadyForCrawlingAsync(CancellationToken cancellationToken)
+    private async Task ProcessUrlsReadyForCrawling(CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
         var schedulerService = scope.ServiceProvider.GetRequiredService<ISchedulerService>();

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>appsettings.json</TargetPath>
+    </Content>
+  </ItemGroup>
+
+  <!-- Target to copy appsettings.json to referencing projects -->
+  <Target Name="CopyAppSettingsToReferencingProjects" AfterTargets="Build">
+    <ItemGroup>
+      <AppSettingsFile Include="$(MSBuildThisFileDirectory)appsettings.json" />
+    </ItemGroup>
+    <Copy SourceFiles="@(AppSettingsFile)" 
+          DestinationFolder="$(OutputPath)" 
+          SkipUnchangedFiles="true" 
+          Condition="'$(OutputPath)' != ''" />
+  </Target>
+
+</Project>

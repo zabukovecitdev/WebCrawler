@@ -1,11 +1,14 @@
 using System.Data;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Minio;
 using SamoBot.Infrastructure.Abstractions;
 using SamoBot.Infrastructure.Data;
 using SamoBot.Infrastructure.Database;
 using SamoBot.Infrastructure.Options;
 using SamoBot.Infrastructure.Producers;
+using SamoBot.Infrastructure.Storage.Services;
 using SqlKata.Compilers;
 using SqlKata.Execution;
 
@@ -25,6 +28,8 @@ public static class InfrastructureServiceCollectionExtensions
             configuration.GetSection(ScheduledUrlQueueOptions.SectionName));
         services.Configure<DatabaseOptions>(
             configuration.GetSection(DatabaseOptions.SectionName));
+        services.Configure<MinioOptions>(
+            configuration.GetSection(MinioOptions.SectionName));
 
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
@@ -45,6 +50,31 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddSingleton<IUrlScheduler, UrlScheduler>();
         services.AddScoped<IDiscoveredUrlRepository, DiscoveredUrlRepository>();
+
+        services.AddScoped<IMinioClient>(sp =>
+        {
+            var options = sp.GetRequiredService<IOptions<MinioOptions>>().Value;
+            var endpoint = $"{options.Endpoint}:{options.Port}";
+            
+            var client = new MinioClient()
+                .WithEndpoint(endpoint)
+                .WithCredentials(options.AccessKey, options.SecretKey);
+            
+            if (options.UseSsl)
+            {
+                client = client.WithSSL();
+            }
+            
+            if (!string.IsNullOrEmpty(options.Region))
+            {
+                client = client.WithRegion(options.Region);
+            }
+            
+            return client.Build();
+        });
+
+        services.AddScoped<IStorageManager, MinioStorageManager>();
+        services.AddHostedService<MinioBucketInitializationService>();
 
         return services;
     }

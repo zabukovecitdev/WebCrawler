@@ -53,7 +53,7 @@ public class CrawlerWorker : BackgroundService
             _queueOptions.ExchangeName, _queueOptions.ExchangeType, _queueOptions.QueueName, _queueOptions.RoutingKey);
 
         _consumer = new EventingBasicConsumer(_channel);
-        _consumer.Received += async (model, args) =>
+        _consumer.Received += (model, args) =>
         {
             try
             {
@@ -64,7 +64,6 @@ public class CrawlerWorker : BackgroundService
                 _logger.LogInformation("Received message. RoutingKey: {RoutingKey}, Message: {Message}",
                     routingKey, message);
 
-                // Try to deserialize as ScheduledUrl
                 try
                 {
                     var scheduledUrl = JsonSerializer.Deserialize<ScheduledUrl>(message);
@@ -98,7 +97,8 @@ public class CrawlerWorker : BackgroundService
             autoAck: false,
             consumer: _consumer);
 
-        _logger.LogInformation("Crawler worker started and listening for messages...");
+        _logger.LogInformation("Crawler worker started and listening for messages on routing key: {RoutingKey}",
+            _queueOptions.RoutingKey);
 
         // Keep the service running
         while (!cancellationToken.IsCancellationRequested)
