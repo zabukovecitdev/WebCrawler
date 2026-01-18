@@ -25,6 +25,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\SamoBot.Infrastructure\SamoBot.Infrastructure.csproj" />
+      <ProjectReference Include="..\SamoBot.Settings\SamoBot.Settings.csproj" />
     </ItemGroup>
 
     <ItemGroup>

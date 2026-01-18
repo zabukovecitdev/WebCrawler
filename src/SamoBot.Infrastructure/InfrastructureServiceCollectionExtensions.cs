@@ -8,6 +8,7 @@ using SamoBot.Infrastructure.Data;
 using SamoBot.Infrastructure.Database;
 using SamoBot.Infrastructure.Options;
 using SamoBot.Infrastructure.Producers;
+using SamoBot.Infrastructure.Services;
 using SamoBot.Infrastructure.Storage.Services;
 using SqlKata.Compilers;
 using SqlKata.Execution;
@@ -30,6 +31,8 @@ public static class InfrastructureServiceCollectionExtensions
             configuration.GetSection(DatabaseOptions.SectionName));
         services.Configure<MinioOptions>(
             configuration.GetSection(MinioOptions.SectionName));
+        services.Configure<CrawlerOptions>(
+            configuration.GetSection(CrawlerOptions.SectionName));
 
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
@@ -73,6 +76,7 @@ public static class InfrastructureServiceCollectionExtensions
             return client.Build();
         });
 
+        services.AddSingleton<IDomainRateLimiter, DomainRateLimiter>();
         services.AddScoped<IStorageManager, MinioStorageManager>();
         
         services.AddHttpClient("crawl")
