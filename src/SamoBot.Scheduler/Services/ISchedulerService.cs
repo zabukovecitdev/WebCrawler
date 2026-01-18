@@ -4,5 +4,5 @@ namespace SamoBot.Scheduler.Services;
 
 public interface ISchedulerService
 {
-    Task<IEnumerable<DiscoveredUrl>> GetScheduledEntities(uint limit, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DiscoveredUrl>> GetScheduledEntities(int limit, CancellationToken cancellationToken = default);
 }

@@ -11,7 +11,7 @@ public class DiscoveredUrl
     public UrlStatus Status { get; set; } = UrlStatus.None;
     public DateTimeOffset? LastCrawlAt { get; set; }
     public DateTimeOffset? NextCrawlAt { get; set; }
-    public uint FailCount { get; set; }
+    public int FailCount { get; set; }
     public int LastStatusCode { get; set; }
     public DateTimeOffset DiscoveredAt { get; set; }
     public int Priority { get; set; }

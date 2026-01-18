@@ -32,7 +32,7 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
                 entity.Host,
                 entity.Url,
                 entity.NormalizedUrl,
-                entity.DiscoveredAt,
+                DiscoveredAt = entity.DiscoveredAt.ToUniversalTime(),
                 entity.Priority
             }, cancellationToken: cancellationToken);
 
@@ -41,9 +41,26 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
 
     public async Task<bool> Update(DiscoveredUrl entity, CancellationToken cancellationToken = default)
     {
+        // Normalize DateTimeOffset values to UTC (Npgsql requires offset 0 for timestamp with time zone)
+        // Exclude Id from update as it's an identity column that cannot be updated
         var affected = await queryFactory.Query(TableNames.Database.DiscoveredUrls)
             .Where(nameof(DiscoveredUrl.Id), entity.Id)
-            .UpdateAsync(entity, cancellationToken: cancellationToken);
+            .UpdateAsync(new
+            {
+                entity.Host,
+                entity.Url,
+                entity.NormalizedUrl,
+                entity.Status,
+                LastCrawlAt = entity.LastCrawlAt?.ToUniversalTime(),
+                NextCrawlAt = entity.NextCrawlAt?.ToUniversalTime(),
+                entity.FailCount,
+                entity.LastStatusCode,
+                DiscoveredAt = entity.DiscoveredAt.ToUniversalTime(),
+                entity.Priority,
+                entity.ContentType,
+                entity.ContentLength,
+                entity.ObjectName
+            }, cancellationToken: cancellationToken);
 
         return affected > 0;
     }
@@ -75,7 +92,7 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
             .ExistsAsync(cancellationToken: cancellationToken);
     }
 
-    public async Task<IEnumerable<DiscoveredUrl>> GetReadyForCrawling(uint limit, IDbTransaction? transaction = null,
+    public async Task<IEnumerable<DiscoveredUrl>> GetReadyForCrawling(int limit, IDbTransaction? transaction = null,
         CancellationToken cancellationToken = default)
     {
         // TODO This will fail ehen there are multiple workers. Needs FOR UPDATE SKIP LOCKED
@@ -87,7 +104,7 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
                 .OrWhere(nameof(DiscoveredUrl.NextCrawlAt), "<=", timeProvider.GetUtcNow()))
             .OrderByDesc(nameof(DiscoveredUrl.Priority))
             .OrderBy(nameof(DiscoveredUrl.NextCrawlAt))
-            .Limit((int)limit).GetAsync<DiscoveredUrl>(transaction, cancellationToken: cancellationToken);
+            .Limit(limit).GetAsync<DiscoveredUrl>(transaction, cancellationToken: cancellationToken);
     }
 
     public async Task UpdateStatusToInFlight(IEnumerable<int> ids, IDbTransaction transaction, CancellationToken cancellationToken = default)

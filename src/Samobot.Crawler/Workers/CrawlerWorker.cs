@@ -170,8 +170,8 @@ public class CrawlerWorker : BackgroundService
         }
         
         var now = _timeProvider.GetUtcNow();
-        discoveredUrl.LastCrawlAt = now;
-        discoveredUrl.NextCrawlAt = now.AddDays(1);
+        discoveredUrl.LastCrawlAt = now.ToUniversalTime();
+        discoveredUrl.NextCrawlAt = now.AddDays(1).ToUniversalTime();
         discoveredUrl.LastStatusCode = metadata.StatusCode;
         discoveredUrl.ContentType = metadata.ContentType;
         discoveredUrl.ContentLength = metadata.ContentLength;

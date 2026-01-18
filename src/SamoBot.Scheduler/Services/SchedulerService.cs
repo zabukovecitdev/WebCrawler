@@ -23,7 +23,7 @@ public class SchedulerService : ISchedulerService
         _logger = logger;
     }
 
-    public async Task<IEnumerable<DiscoveredUrl>> GetScheduledEntities(uint limit, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<DiscoveredUrl>> GetScheduledEntities(int limit, CancellationToken cancellationToken = default)
     {
         _logger.LogDebug("Fetching URLs ready for crawling with limit {Limit}", limit);
         

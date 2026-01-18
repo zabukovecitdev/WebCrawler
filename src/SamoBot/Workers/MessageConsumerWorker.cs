@@ -97,7 +97,8 @@ public class MessageConsumerWorker : BackgroundService
             Url = dirtyUrl,
             Host = normalizedUrl.Host,
             NormalizedUrl = normalizedUrl.AbsoluteUri,
-            DiscoveredAt = _timeProvider.GetUtcNow(),
+            // Ensure UTC offset (Npgsql requires offset 0 for timestamp with time zone)
+            DiscoveredAt = _timeProvider.GetUtcNow().ToUniversalTime(),
             Priority = normalizedUrl.GetUrlSegmentsLength() + normalizedUrl.GetQueryParameterCount()
         };
 
