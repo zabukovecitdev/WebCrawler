@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SamoBot\SamoBot.csproj" />
+    <ProjectReference Include="..\SamoBot.Settings\SamoBot.Settings.csproj" />
   </ItemGroup>
 
 </Project>

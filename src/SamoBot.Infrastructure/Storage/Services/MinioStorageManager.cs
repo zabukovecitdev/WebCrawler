@@ -80,6 +80,21 @@ public class MinioStorageManager : IStorageManager
             {
                 using var request = new HttpRequestMessage(HttpMethod.Get, url);
                 var httpResponse = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                
+                // Record Retry-After header for rate limiting
+                if (httpResponse.Headers.RetryAfter != null)
+                {
+                    var retryAfter = httpResponse.Headers.RetryAfter.Delta ??
+                                   (httpResponse.Headers.RetryAfter.Date.HasValue
+                                       ? httpResponse.Headers.RetryAfter.Date.Value - _timeProvider.GetUtcNow()
+                                       : TimeSpan.Zero);
+                    
+                    if (retryAfter > TimeSpan.Zero)
+                    {
+                        await _rateLimiter.RecordRetryAfterAsync(url, retryAfter);
+                    }
+                }
+                
                 return httpResponse;
             });
         }
@@ -94,7 +109,7 @@ public class MinioStorageManager : IStorageManager
             throw new InvalidOperationException($"Failed to get response for {url}");
         }
 
-        _rateLimiter.RecordRequest(url);
+        await _rateLimiter.RecordRequestAsync(url);
 
         try
         {

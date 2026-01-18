@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Minio;
+using StackExchange.Redis;
 using SamoBot.Infrastructure.Abstractions;
 using SamoBot.Infrastructure.Data;
 using SamoBot.Infrastructure.Database;
@@ -33,6 +34,8 @@ public static class InfrastructureServiceCollectionExtensions
             configuration.GetSection(MinioOptions.SectionName));
         services.Configure<CrawlerOptions>(
             configuration.GetSection(CrawlerOptions.SectionName));
+        services.Configure<RedisOptions>(
+            configuration.GetSection(RedisOptions.SectionName));
 
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
@@ -49,6 +52,15 @@ public static class InfrastructureServiceCollectionExtensions
             var connection = sp.GetRequiredService<IDbConnection>();
             var compiler = new PostgresCompiler();
             return new QueryFactory(connection, compiler);
+        });
+
+        // Redis connection
+        services.AddSingleton<IConnectionMultiplexer>(sp =>
+        {
+            var options = sp.GetRequiredService<IOptions<RedisOptions>>().Value;
+            var configuration = ConfigurationOptions.Parse(options.ConnectionString);
+            configuration.DefaultDatabase = options.Database;
+            return ConnectionMultiplexer.Connect(configuration);
         });
 
         services.AddSingleton<IUrlScheduler, UrlScheduler>();

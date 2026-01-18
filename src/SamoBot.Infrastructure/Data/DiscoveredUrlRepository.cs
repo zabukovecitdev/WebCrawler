@@ -3,6 +3,7 @@ using Dapper;
 using Samobot.Domain.Enums;
 using Samobot.Domain.Models;
 using SamoBot.Infrastructure.Constants;
+using SamoBot.Infrastructure.Extensions;
 using SqlKata.Execution;
 
 namespace SamoBot.Infrastructure.Data;
@@ -41,8 +42,6 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
 
     public async Task<bool> Update(DiscoveredUrl entity, CancellationToken cancellationToken = default)
     {
-        // Normalize DateTimeOffset values to UTC (Npgsql requires offset 0 for timestamp with time zone)
-        // Exclude Id from update as it's an identity column that cannot be updated
         var affected = await queryFactory.Query(TableNames.Database.DiscoveredUrls)
             .Where(nameof(DiscoveredUrl.Id), entity.Id)
             .UpdateAsync(new
@@ -50,7 +49,7 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
                 entity.Host,
                 entity.Url,
                 entity.NormalizedUrl,
-                entity.Status,
+                Status = entity.Status.AsString(),
                 LastCrawlAt = entity.LastCrawlAt?.ToUniversalTime(),
                 NextCrawlAt = entity.NextCrawlAt?.ToUniversalTime(),
                 entity.FailCount,

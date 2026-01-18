@@ -21,10 +21,13 @@ services:
     environment:
       - RabbitMQ__HostName=rabbitmq
       - Database__ConnectionString=Host=postgres;Port=5432;Database=samobot;Username=samobot;Password=samobot
+      - Redis__ConnectionString=redis:6379
     depends_on:
       rabbitmq:
         condition: service_healthy
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       migrations:
         condition: service_completed_successfully
@@ -89,10 +92,26 @@ services:
     networks:
       - frontend
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - redis_data:/data
+    networks:
+      - frontend
+
 volumes:
   rabbitmq_data:
   postgres_data:
   minio_data:
+  redis_data:
 
 networks:
   frontend:
