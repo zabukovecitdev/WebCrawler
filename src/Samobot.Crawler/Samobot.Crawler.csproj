@@ -21,15 +21,4 @@
     <ProjectReference Include="..\SamoBot.Settings\SamoBot.Settings.csproj" />
   </ItemGroup>
 
-  <!-- Copy appsettings.json from Settings project to output directory before build -->
-  <Target Name="CopySharedAppSettings" BeforeTargets="PrepareForBuild">
-    <ItemGroup>
-      <SharedAppSettings Include="$(MSBuildThisFileDirectory)..\SamoBot.Settings\appsettings.json" />
-    </ItemGroup>
-    <Copy SourceFiles="@(SharedAppSettings)" 
-          DestinationFiles="$(OutDir)appsettings.json" 
-          SkipUnchangedFiles="true"
-          Condition="Exists('@(SharedAppSettings)')" />
-  </Target>
-
 </Project>

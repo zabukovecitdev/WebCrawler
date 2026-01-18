@@ -4,7 +4,7 @@ namespace Samobot.Crawler.Extensions;
 
 public static class StreamExtensions
 {
-    public static async Task<string> Sha256HexAsync(this Stream stream)
+    public static async Task<string> ToHash(this Stream stream)
     {
         stream.Position = 0;
         

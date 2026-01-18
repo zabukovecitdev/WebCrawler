@@ -12,7 +12,10 @@ public class DiscoveredUrl
     public DateTimeOffset? LastCrawlAt { get; set; }
     public DateTimeOffset? NextCrawlAt { get; set; }
     public uint FailCount { get; set; }
-    public uint LastStatusCode { get; set; }
+    public int LastStatusCode { get; set; }
     public DateTimeOffset DiscoveredAt { get; set; }
     public int Priority { get; set; }
+    public string? ContentType { get; set; }
+    public long? ContentLength { get; set; }
+    public string? ObjectName { get; set; }
 }

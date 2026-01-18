@@ -74,6 +74,7 @@ public static class InfrastructureServiceCollectionExtensions
         });
 
         services.AddScoped<IStorageManager, MinioStorageManager>();
+        services.AddHttpClient();
         services.AddHostedService<MinioBucketInitializationService>();
 
         return services;
