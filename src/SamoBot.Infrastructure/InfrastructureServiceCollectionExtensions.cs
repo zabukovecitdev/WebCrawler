@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Minio;
+using Polly;
 using StackExchange.Redis;
 using SamoBot.Infrastructure.Abstractions;
 using SamoBot.Infrastructure.Data;
@@ -113,6 +114,16 @@ public static class InfrastructureServiceCollectionExtensions
         });
 
         services.AddSingleton<IDomainRateLimiter, DomainRateLimiter>();
+        
+        // Register retry policy for content upload builder
+        services.AddSingleton<IAsyncPolicy<HttpResponseMessage>>(sp =>
+        {
+            var crawlerOptions = sp.GetRequiredService<IOptions<CrawlerOptions>>().Value;
+            var logger = sp.GetRequiredService<ILogger<MinioStorageManager>>();
+            return CrawlerPolicyBuilder.BuildRetryPolicy(crawlerOptions, logger);
+        });
+        
+        services.AddScoped<IContentUploadBuilderFactory, ContentUploadBuilderFactory>();
         services.AddScoped<IStorageManager, MinioStorageManager>();
         
         services.AddHttpClient("crawl")

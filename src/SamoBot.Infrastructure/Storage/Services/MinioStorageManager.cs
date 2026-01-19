@@ -12,7 +12,7 @@ using SamoBot.Infrastructure.Services;
 
 namespace SamoBot.Infrastructure.Storage.Services;
 
-internal class ContentUploadContext
+public class ContentUploadContext
 {
     public string Url { get; init; } = string.Empty;
     public string Bucket { get; init; } = string.Empty;
@@ -27,7 +27,7 @@ internal class ContentUploadContext
     public MemoryStream? MemoryStream { get; set; }
 }
 
-internal class ContentUploadBuilder
+public class ContentUploadBuilder
 {
     private readonly ContentUploadContext _context;
     private readonly IDomainRateLimiter _rateLimiter;
@@ -238,34 +238,62 @@ internal class ContentUploadBuilder
     }
 }
 
+internal class ContentUploadBuilderFactory : IContentUploadBuilderFactory
+{
+    private readonly IDomainRateLimiter _rateLimiter;
+    private readonly HttpClient _httpClient;
+    private readonly IAsyncPolicy<HttpResponseMessage> _retryPolicy;
+    private readonly TimeProvider _timeProvider;
+    private readonly ILogger<ContentUploadBuilder> _logger;
+    private readonly IMinioClient _minioClient;
+    private readonly IDiscoveredUrlRepository? _repository;
+
+    public ContentUploadBuilderFactory(
+        IDomainRateLimiter rateLimiter,
+        IHttpClientFactory httpClientFactory,
+        IAsyncPolicy<HttpResponseMessage> retryPolicy,
+        TimeProvider timeProvider,
+        ILogger<ContentUploadBuilder> logger,
+        IMinioClient minioClient,
+        IDiscoveredUrlRepository? repository = null)
+    {
+        _rateLimiter = rateLimiter;
+        _httpClient = httpClientFactory.CreateClient("crawl");
+        _retryPolicy = retryPolicy;
+        _timeProvider = timeProvider;
+        _logger = logger;
+        _minioClient = minioClient;
+        _repository = repository;
+    }
+
+    public ContentUploadBuilder Create(ContentUploadContext context)
+    {
+        return new ContentUploadBuilder(
+            context,
+            _rateLimiter,
+            _httpClient,
+            _retryPolicy,
+            _timeProvider,
+            _logger,
+            _minioClient,
+            _repository);
+    }
+}
+
 public class MinioStorageManager : IStorageManager
 {
     private readonly IMinioClient _minioClient;
     private readonly ILogger<MinioStorageManager> _logger;
-    private readonly HttpClient _http;
-    private readonly IDomainRateLimiter _rateLimiter;
-    private readonly CrawlerOptions _crawlerOptions;
-    private readonly TimeProvider _timeProvider;
-    private readonly IAsyncPolicy<HttpResponseMessage> _retryPolicy;
-    private readonly IDiscoveredUrlRepository? _repository;
+    private readonly IContentUploadBuilderFactory _builderFactory;
 
     public MinioStorageManager(
         IMinioClient minioClient,
         ILogger<MinioStorageManager> logger,
-        IHttpClientFactory httpClientFactory,
-        IDomainRateLimiter rateLimiter,
-        IOptions<CrawlerOptions> crawlerOptions,
-        TimeProvider timeProvider,
-        IDiscoveredUrlRepository? repository = null)
+        IContentUploadBuilderFactory builderFactory)
     {
         _minioClient = minioClient;
         _logger = logger;
-        _http = httpClientFactory.CreateClient("crawl");
-        _rateLimiter = rateLimiter;
-        _crawlerOptions = crawlerOptions.Value;
-        _timeProvider = timeProvider;
-        _retryPolicy = CrawlerPolicyBuilder.BuildRetryPolicy(_crawlerOptions, _logger);
-        _repository = repository;
+        _builderFactory = builderFactory;
     }
 
     public async Task CreateBucket(string bucketName)
@@ -308,15 +336,7 @@ public class MinioStorageManager : IStorageManager
             CancellationToken = cancellationToken
         };
 
-        var builder = new ContentUploadBuilder(
-            context,
-            _rateLimiter,
-            _http,
-            _retryPolicy,
-            _timeProvider,
-            _logger,
-            _minioClient,
-            _repository);
+        var builder = _builderFactory.Create(context);
 
         try
         {
