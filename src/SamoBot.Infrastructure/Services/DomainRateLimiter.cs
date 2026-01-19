@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
@@ -12,26 +13,50 @@ public interface IDomainRateLimiter
     Task RecordRetryAfterAsync(string url, TimeSpan retryAfter);
 }
 
+internal class InMemoryRateLimitEntry
+{
+    public DateTimeOffset NextAllowedRequest { get; set; }
+    public DateTimeOffset? RetryAfterUntil { get; set; }
+}
+
 public class DomainRateLimiter : IDomainRateLimiter
 {
-    private const string LastRequestKeyPrefix = "ratelimit:lastrequest:";
+    private const string DelayKeyPrefix = "ratelimit:delay:";
     private const string RetryAfterKeyPrefix = "ratelimit:retryafter:";
     
-    private readonly IDatabase _database;
+    private readonly IConnectionMultiplexer? _redis;
     private readonly CrawlerOptions _options;
     private readonly ILogger<DomainRateLimiter> _logger;
     private readonly TimeProvider _timeProvider;
+    
+    // In-memory fallback when Redis is not available
+    private readonly ConcurrentDictionary<string, InMemoryRateLimitEntry> _inMemoryRateLimits = new();
 
     public DomainRateLimiter(
-        IConnectionMultiplexer redis,
+        IConnectionMultiplexer? redis,
         IOptions<CrawlerOptions> options,
         ILogger<DomainRateLimiter> logger,
         TimeProvider timeProvider)
     {
-        _database = redis.GetDatabase();
+        _redis = redis;
         _options = options.Value;
         _logger = logger;
         _timeProvider = timeProvider;
+        
+        if (redis == null || !redis.IsConnected)
+        {
+            _logger.LogWarning("Redis is not available. Using in-memory rate limiting. Rate limits will not be shared across instances.");
+        }
+    }
+
+    private bool IsRedisAvailable()
+    {
+        return _redis != null && _redis.IsConnected;
+    }
+
+    private IDatabase? GetDatabase()
+    {
+        return IsRedisAvailable() ? _redis!.GetDatabase() : null;
     }
     
     public async Task WaitForDomainDelayAsync(string url, CancellationToken cancellationToken = default)
@@ -45,8 +70,23 @@ public class DomainRateLimiter : IDomainRateLimiter
         var domain = ExtractDomain(url);
         var now = _timeProvider.GetUtcNow();
 
+        var database = GetDatabase();
+        if (database != null)
+        {
+            await WaitForDomainDelayRedisAsync(domain, now, database, cancellationToken);
+        }
+        else
+        {
+            await WaitForDomainDelayInMemoryAsync(domain, now, cancellationToken);
+        }
+    }
+
+    private async Task WaitForDomainDelayRedisAsync(string domain, DateTimeOffset now, IDatabase database, CancellationToken cancellationToken)
+    {
+
+        // Check Retry-After header first (higher priority)
         var retryAfterKey = RetryAfterKeyPrefix + domain;
-        var retryAfterUntilValue = await _database.StringGetAsync(retryAfterKey);
+        var retryAfterUntilValue = await database.StringGetAsync(retryAfterKey);
         
         if (retryAfterUntilValue.HasValue && long.TryParse(retryAfterUntilValue.ToString(), out var retryAfterUntilTicks))
         {
@@ -66,53 +106,116 @@ public class DomainRateLimiter : IDomainRateLimiter
             else
             {
                 // Retry-After period has expired, remove it
-                await _database.KeyDeleteAsync(retryAfterKey);
+                await database.KeyDeleteAsync(retryAfterKey);
             }
         }
 
-        // Check last request time for this domain
-        var lastRequestKey = LastRequestKeyPrefix + domain;
-        var lastRequestTimeValue = await _database.StringGetAsync(lastRequestKey);
+        // TTL-based delay mechanism: try to set key with TTL (only if it doesn't exist)
+        var delayKey = DelayKeyPrefix + domain;
+        var delayTtl = TimeSpan.FromMilliseconds(_options.DefaultDelayMs);
         
-        if (lastRequestTimeValue.HasValue && long.TryParse(lastRequestTimeValue.ToString(), out var lastRequestTimeTicks))
+        // Try to atomically set the key with TTL only if it doesn't exist
+        var wasSet = await database.StringSetAsync(
+            delayKey,
+            "1",
+            delayTtl,
+            When.NotExists);
+        
+        if (!wasSet)
         {
-            var lastRequestTime = new DateTimeOffset(lastRequestTimeTicks, TimeSpan.Zero);
-            var timeSinceLastRequest = now - lastRequestTime;
-            var requiredDelay = TimeSpan.FromMilliseconds(_options.DefaultDelayMs);
+            var remainingTtl = await database.KeyTimeToLiveAsync(delayKey);
             
-            if (timeSinceLastRequest < requiredDelay)
+            if (remainingTtl.HasValue && remainingTtl.Value.TotalMilliseconds > 0)
             {
-                var delayNeeded = requiredDelay - timeSinceLastRequest;
                 var delayMs = (int)Math.Clamp(
-                    delayNeeded.TotalMilliseconds,
+                    remainingTtl.Value.TotalMilliseconds,
                     _options.MinDelayMs,
                     _options.MaxDelayMs);
                 
                 _logger.LogDebug(
-                    "Rate limiting domain {Domain}, waiting {DelayMs}ms since last request",
-                    domain, delayMs);
+                    "Rate limiting domain {Domain}, waiting {DelayMs}ms (TTL remaining: {RemainingMs}ms)",
+                    domain, delayMs, remainingTtl.Value.TotalMilliseconds);
                 
                 await Task.Delay(delayMs, cancellationToken);
+                
+                // After delay, set the key again with TTL for the next request
+                await database.StringSetAsync(delayKey, "1", delayTtl);
+            }
+            else
+            {
+                // TTL expired between check and now, set it for next request
+                await database.StringSetAsync(delayKey, "1", delayTtl);
             }
         }
+        else
+        {
+            // Key was set (first request or TTL expired) - proceed immediately
+            // Key is already set with TTL, so next request will be delayed
+            _logger.LogDebug(
+                "No delay needed for domain {Domain} (first request or TTL expired)",
+                domain);
+        }
+    }
+
+    private async Task WaitForDomainDelayInMemoryAsync(string domain, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var entry = _inMemoryRateLimits.GetOrAdd(domain, _ => new InMemoryRateLimitEntry
+        {
+            NextAllowedRequest = DateTimeOffset.MinValue
+        });
+
+        // Check Retry-After header first (higher priority)
+        if (entry.RetryAfterUntil.HasValue && now < entry.RetryAfterUntil.Value)
+        {
+            var retryAfterDelay = entry.RetryAfterUntil.Value - now;
+            var delayMs = (int)Math.Min(retryAfterDelay.TotalMilliseconds, _options.MaxRetryAfterSeconds * 1000);
+            
+            _logger.LogInformation(
+                "Respecting Retry-After header for domain {Domain}, waiting {DelayMs}ms (in-memory)",
+                domain, delayMs);
+            
+            await Task.Delay(delayMs, cancellationToken);
+            now = _timeProvider.GetUtcNow();
+            entry.RetryAfterUntil = null; // Clear after delay
+        }
+
+        // Check if we need to delay based on rate limit
+        if (now < entry.NextAllowedRequest)
+        {
+            var delay = entry.NextAllowedRequest - now;
+            var delayMs = (int)Math.Clamp(
+                delay.TotalMilliseconds,
+                _options.MinDelayMs,
+                _options.MaxDelayMs);
+            
+            _logger.LogDebug(
+                "Rate limiting domain {Domain}, waiting {DelayMs}ms (in-memory)",
+                domain, delayMs);
+            
+            await Task.Delay(delayMs, cancellationToken);
+            now = _timeProvider.GetUtcNow();
+        }
+
+        // Set next allowed request time
+        entry.NextAllowedRequest = now.AddMilliseconds(_options.DefaultDelayMs);
+        
+        _logger.LogDebug(
+            "No delay needed for domain {Domain} (in-memory)",
+            domain);
     }
 
     public async Task RecordRequestAsync(string url)
     {
+        // With TTL-based approach, the delay key is already set in WaitForDomainDelayAsync
+        // This method is kept for backward compatibility but is essentially a no-op
+        // when using TTL-based rate limiting
         if (!_options.UsePerDomainRateLimiting)
         {
             return;
         }
 
-        var domain = ExtractDomain(url);
-        var lastRequestKey = LastRequestKeyPrefix + domain;
-        var nowTicks = _timeProvider.GetUtcNow().UtcTicks;
-        
-        // Store with expiration (clean up after 24 hours of inactivity)
-        await _database.StringSetAsync(
-            lastRequestKey, 
-            nowTicks.ToString(), 
-            TimeSpan.FromHours(24));
+        // The TTL key is already set in WaitForDomainDelayAsync, so nothing to do here
+        // This ensures the delay is enforced before the request, not after
     }
 
     public async Task RecordRetryAfterAsync(string url, TimeSpan retryAfter)
@@ -123,16 +226,30 @@ public class DomainRateLimiter : IDomainRateLimiter
         }
 
         var domain = ExtractDomain(url);
-        var retryAfterKey = RetryAfterKeyPrefix + domain;
         var maxRetryAfter = TimeSpan.FromSeconds(_options.MaxRetryAfterSeconds);
         var actualRetryAfter = retryAfter > maxRetryAfter ? maxRetryAfter : retryAfter;
         var retryAfterUntil = _timeProvider.GetUtcNow().Add(actualRetryAfter);
-        
-        // Store with expiration matching the retry-after duration
-        await _database.StringSetAsync(
-            retryAfterKey,
-            retryAfterUntil.UtcTicks.ToString(),
-            actualRetryAfter);
+
+        var database = GetDatabase();
+        if (database != null)
+        {
+            var retryAfterKey = RetryAfterKeyPrefix + domain;
+            
+            // Store with expiration matching the retry-after duration
+            await database.StringSetAsync(
+                retryAfterKey,
+                retryAfterUntil.UtcTicks.ToString(),
+                actualRetryAfter);
+        }
+        else
+        {
+            // In-memory fallback
+            var entry = _inMemoryRateLimits.GetOrAdd(domain, _ => new InMemoryRateLimitEntry
+            {
+                NextAllowedRequest = DateTimeOffset.MinValue
+            });
+            entry.RetryAfterUntil = retryAfterUntil;
+        }
         
         _logger.LogWarning(
             "Recorded Retry-After for domain {Domain}: {RetryAfterSeconds}s (until {Until})",

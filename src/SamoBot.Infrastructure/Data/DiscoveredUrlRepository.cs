@@ -134,4 +134,24 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
         
         await transaction.Connection.ExecuteAsync(command);
     }
+
+    public async Task<bool> UpdateDiscoveredUrlWithMetadata(int discoveredUrlId, UrlContentMetadata metadata, string objectName, CancellationToken cancellationToken = default)
+    {
+        var discoveredUrl = await GetById(discoveredUrlId, cancellationToken);
+        if (discoveredUrl == null)
+        {
+            return false;
+        }
+        
+        var now = timeProvider.GetUtcNow();
+        discoveredUrl.LastCrawlAt = now.ToUniversalTime();
+        discoveredUrl.NextCrawlAt = now.AddDays(1).ToUniversalTime();
+        discoveredUrl.LastStatusCode = metadata.StatusCode;
+        discoveredUrl.ContentType = metadata.ContentType;
+        discoveredUrl.ContentLength = metadata.ContentLength;
+        discoveredUrl.ObjectName = objectName;
+        discoveredUrl.Status = UrlStatus.Idle;
+
+        return await Update(discoveredUrl, cancellationToken);
+    }
 }

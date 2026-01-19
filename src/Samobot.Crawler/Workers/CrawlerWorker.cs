@@ -1,15 +1,12 @@
 using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using Samobot.Domain.Enums;
 using Samobot.Domain.Models;
 using Samobot.Crawler.Utilities;
-using SamoBot.Infrastructure.Data;
 using SamoBot.Infrastructure.Options;
 using SamoBot.Infrastructure.RabbitMQ;
 using SamoBot.Infrastructure.Storage.Services;
@@ -22,8 +19,6 @@ public class CrawlerWorker : BackgroundService
     private readonly IOptions<MinioOptions> _minioOptions;
     private readonly RabbitMQConnectionOptions _connectionOptions;
     private readonly ScheduledUrlQueueOptions _queueOptions;
-    private readonly IServiceProvider _serviceProvider;
-    private readonly TimeProvider _timeProvider;
     private IConnection? _connection;
     private IModel? _channel;
     private EventingBasicConsumer? _consumer;
@@ -34,17 +29,13 @@ public class CrawlerWorker : BackgroundService
         IOptions<RabbitMQConnectionOptions> connectionOptions,
         IOptions<ScheduledUrlQueueOptions> queueOptions,
         IOptions<MinioOptions> minioOptions,
-        IStorageManager storageManager,
-        IServiceProvider serviceProvider,
-        TimeProvider timeProvider)
+        IStorageManager storageManager)
     {
         _logger = logger;
         _minioOptions = minioOptions;
         _connectionOptions = connectionOptions.Value;
         _queueOptions = queueOptions.Value;
         _storageManager = storageManager;
-        _serviceProvider = serviceProvider;
-        _timeProvider = timeProvider;
     }
 
     protected override async Task ExecuteAsync(CancellationToken cancellationToken = default)
@@ -111,13 +102,6 @@ public class CrawlerWorker : BackgroundService
         await base.StopAsync(cancellationToken);
     }
 
-    public new void Dispose()
-    {
-        _channel?.Dispose();
-        _connection?.Dispose();
-        base.Dispose();
-    }
-
     private async Task ProcessMessage(string message, CancellationToken cancellationToken)
     {
         ScheduledUrl? scheduledUrl;
@@ -144,49 +128,11 @@ public class CrawlerWorker : BackgroundService
         var objectName = ObjectNameGenerator.GenerateHierarchical(scheduledUrl.Url);
         _logger.LogInformation("Generated object name: {ObjectName} for URL: {Url}", objectName, scheduledUrl.Url);
 
-        var metadata = await _storageManager.UploadContent(
+        await _storageManager.UploadContent(
             scheduledUrl.Url, 
             _minioOptions.Value.BucketName, 
-            objectName, 
+            objectName,
+            scheduledUrl.Id,
             cancellationToken);
-
-        await UpdateDiscoveredUrl(scheduledUrl.Id, metadata, objectName, cancellationToken);
-    }
-
-    private async Task UpdateDiscoveredUrl(
-        int discoveredUrlId, 
-        UrlContentMetadata metadata, 
-        string objectName, 
-        CancellationToken cancellationToken)
-    {
-        using var scope = _serviceProvider.CreateScope();
-        var repository = scope.ServiceProvider.GetRequiredService<IDiscoveredUrlRepository>();
-
-        var discoveredUrl = await repository.GetById(discoveredUrlId, cancellationToken);
-        if (discoveredUrl == null)
-        {
-            _logger.LogWarning("DiscoveredUrl with ID {Id} not found in database", discoveredUrlId);
-            return;
-        }
-        
-        var now = _timeProvider.GetUtcNow();
-        discoveredUrl.LastCrawlAt = now.ToUniversalTime();
-        discoveredUrl.NextCrawlAt = now.AddDays(1).ToUniversalTime();
-        discoveredUrl.LastStatusCode = metadata.StatusCode;
-        discoveredUrl.ContentType = metadata.ContentType;
-        discoveredUrl.ContentLength = metadata.ContentLength;
-        discoveredUrl.ObjectName = objectName;
-        discoveredUrl.Status = UrlStatus.Idle;
-
-        var updated = await repository.Update(discoveredUrl, cancellationToken);
-        if (!updated)
-        {
-            _logger.LogWarning("Failed to update DiscoveredUrl {Id} with metadata", discoveredUrlId);
-            return;
-        }
-
-        _logger.LogInformation(
-            "Updated DiscoveredUrl {Id} with metadata - StatusCode: {StatusCode}, ContentType: {ContentType}, ContentLength: {ContentLength}",
-            discoveredUrl.Id, metadata.StatusCode, metadata.ContentType, metadata.ContentLength);
     }
 }

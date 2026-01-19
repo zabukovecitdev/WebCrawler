@@ -7,5 +7,5 @@ public interface IStorageManager
     Task CreateBucket(string bucketName);
 
     Task<UrlContentMetadata> UploadContent(string url, string bucket, string objectName,
-        CancellationToken cancellationToken = default);
+        int? discoveredUrlId = null, CancellationToken cancellationToken = default);
 }

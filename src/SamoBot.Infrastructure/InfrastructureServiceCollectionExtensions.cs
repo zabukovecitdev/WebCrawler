@@ -1,6 +1,7 @@
 using System.Data;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Minio;
 using StackExchange.Redis;
@@ -54,13 +55,36 @@ public static class InfrastructureServiceCollectionExtensions
             return new QueryFactory(connection, compiler);
         });
 
-        // Redis connection
-        services.AddSingleton<IConnectionMultiplexer>(sp =>
+        // Redis connection - optional, application will work without it
+        services.AddSingleton<IConnectionMultiplexer?>(sp =>
         {
-            var options = sp.GetRequiredService<IOptions<RedisOptions>>().Value;
-            var configuration = ConfigurationOptions.Parse(options.ConnectionString);
-            configuration.DefaultDatabase = options.Database;
-            return ConnectionMultiplexer.Connect(configuration);
+            try
+            {
+                var options = sp.GetRequiredService<IOptions<RedisOptions>>().Value;
+                var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+                var logger = loggerFactory.CreateLogger("Redis");
+                
+                var configuration = ConfigurationOptions.Parse(options.ConnectionString);
+                configuration.DefaultDatabase = options.Database;
+                configuration.AbortOnConnectFail = false; // Don't abort on connect failure - allows app to start
+                configuration.ConnectRetry = 3; // Retry connection attempts
+                configuration.ConnectTimeout = 5000; // 5 second timeout
+                
+                var multiplexer = ConnectionMultiplexer.Connect(configuration);
+                
+                // ConnectionMultiplexer.Connect() with AbortOnConnectFail=false won't throw,
+                // but connection might not be ready immediately. DomainRateLimiter will check
+                // IsConnected on each operation and fallback to in-memory if not connected.
+                logger.LogInformation("Redis multiplexer created. Connection will be established asynchronously.");
+                return multiplexer;
+            }
+            catch (Exception ex)
+            {
+                var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+                var logger = loggerFactory.CreateLogger("Redis");
+                logger.LogWarning(ex, "Failed to create Redis connection. Application will continue without Redis, using in-memory rate limiting.");
+                return null;
+            }
         });
 
         services.AddSingleton<IUrlScheduler, UrlScheduler>();
