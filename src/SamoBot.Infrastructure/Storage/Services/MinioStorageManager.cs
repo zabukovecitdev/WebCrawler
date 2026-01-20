@@ -36,8 +36,8 @@ public class ContentUploadBuilder
     private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
     private readonly IMinioClient _minioClient;
-    private readonly IUrlFetchRepository _urlFetchRepository;
-    private readonly IDiscoveredUrlRepository _discoveredUrlRepository;
+    private readonly IUrlFetchRepository? _urlFetchRepository;
+    private readonly IDiscoveredUrlRepository? _discoveredUrlRepository;
 
     public ContentUploadBuilder(
         ContentUploadContext context,
@@ -47,8 +47,8 @@ public class ContentUploadBuilder
         TimeProvider timeProvider,
         ILogger logger,
         IMinioClient minioClient,
-        IUrlFetchRepository urlFetchRepository,
-        IDiscoveredUrlRepository discoveredUrlRepository)
+        IUrlFetchRepository? urlFetchRepository = null,
+        IDiscoveredUrlRepository? discoveredUrlRepository = null)
     {
         _context = context;
         _rateLimiter = rateLimiter;
@@ -176,7 +176,7 @@ public class ContentUploadBuilder
 
     public async Task<ContentUploadBuilder> UpdateDiscoveredUrl()
     {
-        if (_context.DiscoveredUrlId.HasValue)
+        if (_context.DiscoveredUrlId.HasValue && _urlFetchRepository != null && _discoveredUrlRepository != null)
         {
             var now = _timeProvider.GetUtcNow();
             
@@ -264,8 +264,8 @@ internal class ContentUploadBuilderFactory : IContentUploadBuilderFactory
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<ContentUploadBuilder> _logger;
     private readonly IMinioClient _minioClient;
-    private readonly IUrlFetchRepository _urlFetchRepository;
-    private readonly IDiscoveredUrlRepository _discoveredUrlRepository;
+    private readonly IUrlFetchRepository? _urlFetchRepository;
+    private readonly IDiscoveredUrlRepository? _discoveredUrlRepository;
 
     public ContentUploadBuilderFactory(
         IDomainRateLimiter rateLimiter,
@@ -274,8 +274,8 @@ internal class ContentUploadBuilderFactory : IContentUploadBuilderFactory
         TimeProvider timeProvider,
         ILogger<ContentUploadBuilder> logger,
         IMinioClient minioClient,
-        IUrlFetchRepository urlFetchRepository,
-        IDiscoveredUrlRepository discoveredUrlRepository)
+        IUrlFetchRepository? urlFetchRepository = null,
+        IDiscoveredUrlRepository? discoveredUrlRepository = null)
     {
         _rateLimiter = rateLimiter;
         _httpClient = httpClientFactory.CreateClient("crawl");

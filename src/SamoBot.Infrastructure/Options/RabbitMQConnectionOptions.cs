@@ -3,6 +3,8 @@ namespace SamoBot.Infrastructure.Options;
 public class RabbitMQConnectionOptions
 {
     public const string SectionName = "RabbitMQ:Connection";
+    
+    public int? ManagementPort { get; set; } = 15672;
 
     public string HostName { get; set; } = "localhost";
     public int Port { get; set; } = 5672;

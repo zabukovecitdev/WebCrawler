@@ -90,7 +90,7 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddSingleton<IUrlScheduler, UrlScheduler>();
         services.AddScoped<IDiscoveredUrlRepository, DiscoveredUrlRepository>();
-        services.AddScoped<IUrlFetchRepository, UrlFetchRepository>();
+        // IUrlFetchRepository - interface defined, implementation to be added later
 
         services.AddScoped<IMinioClient>(sp =>
         {
@@ -116,7 +116,6 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddSingleton<IDomainRateLimiter, DomainRateLimiter>();
         
-        // Register retry policy for content upload builder
         services.AddSingleton<IAsyncPolicy<HttpResponseMessage>>(sp =>
         {
             var crawlerOptions = sp.GetRequiredService<IOptions<CrawlerOptions>>().Value;
@@ -134,30 +133,22 @@ public static class InfrastructureServiceCollectionExtensions
             })
             .ConfigureHttpClient(client =>
             {
-                // Set a realistic User-Agent (Chrome on Windows)
                 client.DefaultRequestHeaders.Add("User-Agent", 
                     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
                 
-                // Browser-like Accept headers
                 client.DefaultRequestHeaders.Add("Accept", 
                     "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
                 
-                // Language preferences
                 client.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.9");
                 
-                // Encoding preferences (handled automatically by HttpClientHandler with AutomaticDecompression)
                 client.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate, br");
                 
-                // Connection header
                 client.DefaultRequestHeaders.Add("Connection", "keep-alive");
                 
-                // Do Not Track (optional, but some sites check for it)
                 client.DefaultRequestHeaders.Add("DNT", "1");
                 
-                // Upgrade-Insecure-Requests (common in modern browsers)
                 client.DefaultRequestHeaders.Add("Upgrade-Insecure-Requests", "1");
                 
-                // Sec-Fetch headers (modern browser behavior)
                 client.DefaultRequestHeaders.Add("Sec-Fetch-Dest", "document");
                 client.DefaultRequestHeaders.Add("Sec-Fetch-Mode", "navigate");
                 client.DefaultRequestHeaders.Add("Sec-Fetch-Site", "none");
