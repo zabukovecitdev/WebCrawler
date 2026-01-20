@@ -90,6 +90,7 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddSingleton<IUrlScheduler, UrlScheduler>();
         services.AddScoped<IDiscoveredUrlRepository, DiscoveredUrlRepository>();
+        services.AddScoped<IUrlFetchRepository, UrlFetchRepository>();
 
         services.AddScoped<IMinioClient>(sp =>
         {

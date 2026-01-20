@@ -53,12 +53,9 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
                 LastCrawlAt = entity.LastCrawlAt?.ToUniversalTime(),
                 NextCrawlAt = entity.NextCrawlAt?.ToUniversalTime(),
                 entity.FailCount,
-                entity.LastStatusCode,
                 DiscoveredAt = entity.DiscoveredAt.ToUniversalTime(),
                 entity.Priority,
-                entity.ContentType,
-                entity.ContentLength,
-                entity.ObjectName
+                entity.LastFetchId
             }, cancellationToken: cancellationToken);
 
         return affected > 0;
@@ -135,7 +132,7 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
         await transaction.Connection.ExecuteAsync(command);
     }
 
-    public async Task<bool> UpdateDiscoveredUrlWithMetadata(int discoveredUrlId, UrlContentMetadata metadata, string objectName, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAfterFetch(int discoveredUrlId, int fetchId, CancellationToken cancellationToken = default)
     {
         var discoveredUrl = await GetById(discoveredUrlId, cancellationToken);
         if (discoveredUrl == null)
@@ -146,10 +143,7 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
         var now = timeProvider.GetUtcNow();
         discoveredUrl.LastCrawlAt = now.ToUniversalTime();
         discoveredUrl.NextCrawlAt = now.AddDays(1).ToUniversalTime();
-        discoveredUrl.LastStatusCode = metadata.StatusCode;
-        discoveredUrl.ContentType = metadata.ContentType;
-        discoveredUrl.ContentLength = metadata.ContentLength;
-        discoveredUrl.ObjectName = objectName;
+        discoveredUrl.LastFetchId = fetchId;
         discoveredUrl.Status = UrlStatus.Idle;
 
         return await Update(discoveredUrl, cancellationToken);

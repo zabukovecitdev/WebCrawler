@@ -36,7 +36,8 @@ public class ContentUploadBuilder
     private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
     private readonly IMinioClient _minioClient;
-    private readonly IDiscoveredUrlRepository? _repository;
+    private readonly IUrlFetchRepository _urlFetchRepository;
+    private readonly IDiscoveredUrlRepository _discoveredUrlRepository;
 
     public ContentUploadBuilder(
         ContentUploadContext context,
@@ -46,7 +47,8 @@ public class ContentUploadBuilder
         TimeProvider timeProvider,
         ILogger logger,
         IMinioClient minioClient,
-        IDiscoveredUrlRepository? repository = null)
+        IUrlFetchRepository urlFetchRepository,
+        IDiscoveredUrlRepository discoveredUrlRepository)
     {
         _context = context;
         _rateLimiter = rateLimiter;
@@ -55,7 +57,8 @@ public class ContentUploadBuilder
         _timeProvider = timeProvider;
         _logger = logger;
         _minioClient = minioClient;
-        _repository = repository;
+        _urlFetchRepository = urlFetchRepository;
+        _discoveredUrlRepository = discoveredUrlRepository;
     }
 
     public async Task<ContentUploadBuilder> WaitForRateLimitAsync()
@@ -173,30 +176,45 @@ public class ContentUploadBuilder
 
     public async Task<ContentUploadBuilder> UpdateDiscoveredUrl()
     {
-        if (_context.DiscoveredUrlId.HasValue && _repository != null)
+        if (_context.DiscoveredUrlId.HasValue)
         {
-            var metadata = new UrlContentMetadata
+            var now = _timeProvider.GetUtcNow();
+            
+            // Create a new UrlFetch record
+            var urlFetch = new UrlFetch
             {
+                DiscoveredUrlId = _context.DiscoveredUrlId.Value,
+                FetchedAt = now,
+                StatusCode = _context.StatusCode,
                 ContentType = _context.ContentType,
-                ContentLength = _context.ContentLength,
-                StatusCode = _context.StatusCode
+                ContentLength = _context.ContentLength > 0 ? _context.ContentLength : null,
+                ObjectName = _context.ObjectName
             };
 
-            var updated = await _repository.UpdateDiscoveredUrlWithMetadata(
-                _context.DiscoveredUrlId.Value,
-                metadata,
-                _context.ObjectName,
-                _context.CancellationToken);
+            var fetchId = await _urlFetchRepository.Insert(urlFetch, _context.CancellationToken);
 
-            if (!updated)
+            if (fetchId <= 0)
             {
-                _logger.LogWarning("Failed to update DiscoveredUrl {Id} with metadata", _context.DiscoveredUrlId.Value);
+                _logger.LogWarning("Failed to create UrlFetch record for DiscoveredUrl {Id}", _context.DiscoveredUrlId.Value);
             }
             else
             {
-                _logger.LogInformation(
-                    "Updated DiscoveredUrl {Id} with metadata - StatusCode: {StatusCode}, ContentType: {ContentType}, ContentLength: {ContentLength}",
-                    _context.DiscoveredUrlId.Value, metadata.StatusCode, metadata.ContentType, metadata.ContentLength);
+                // Update DiscoveredUrl with the fetch ID and crawl timestamps
+                var updated = await _discoveredUrlRepository.UpdateAfterFetch(
+                    _context.DiscoveredUrlId.Value,
+                    fetchId,
+                    _context.CancellationToken);
+
+                if (!updated)
+                {
+                    _logger.LogWarning("Failed to update DiscoveredUrl {Id} after fetch", _context.DiscoveredUrlId.Value);
+                }
+                else
+                {
+                    _logger.LogInformation(
+                        "Created UrlFetch {FetchId} for DiscoveredUrl {Id} - StatusCode: {StatusCode}, ContentType: {ContentType}, ContentLength: {ContentLength}",
+                        fetchId, _context.DiscoveredUrlId.Value, _context.StatusCode, _context.ContentType, _context.ContentLength);
+                }
             }
         }
 
@@ -246,7 +264,8 @@ internal class ContentUploadBuilderFactory : IContentUploadBuilderFactory
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<ContentUploadBuilder> _logger;
     private readonly IMinioClient _minioClient;
-    private readonly IDiscoveredUrlRepository? _repository;
+    private readonly IUrlFetchRepository _urlFetchRepository;
+    private readonly IDiscoveredUrlRepository _discoveredUrlRepository;
 
     public ContentUploadBuilderFactory(
         IDomainRateLimiter rateLimiter,
@@ -255,7 +274,8 @@ internal class ContentUploadBuilderFactory : IContentUploadBuilderFactory
         TimeProvider timeProvider,
         ILogger<ContentUploadBuilder> logger,
         IMinioClient minioClient,
-        IDiscoveredUrlRepository? repository = null)
+        IUrlFetchRepository urlFetchRepository,
+        IDiscoveredUrlRepository discoveredUrlRepository)
     {
         _rateLimiter = rateLimiter;
         _httpClient = httpClientFactory.CreateClient("crawl");
@@ -263,7 +283,8 @@ internal class ContentUploadBuilderFactory : IContentUploadBuilderFactory
         _timeProvider = timeProvider;
         _logger = logger;
         _minioClient = minioClient;
-        _repository = repository;
+        _urlFetchRepository = urlFetchRepository;
+        _discoveredUrlRepository = discoveredUrlRepository;
     }
 
     public ContentUploadBuilder Create(ContentUploadContext context)
@@ -276,7 +297,8 @@ internal class ContentUploadBuilderFactory : IContentUploadBuilderFactory
             _timeProvider,
             _logger,
             _minioClient,
-            _repository);
+            _urlFetchRepository,
+            _discoveredUrlRepository);
     }
 }
 

@@ -16,8 +16,8 @@ public static partial class UrlMapper
     [MapperIgnoreSource(nameof(DiscoveredUrl.LastCrawlAt))]
     [MapperIgnoreSource(nameof(DiscoveredUrl.NextCrawlAt))]
     [MapperIgnoreSource(nameof(DiscoveredUrl.FailCount))]
-    [MapperIgnoreSource(nameof(DiscoveredUrl.LastStatusCode))]
     [MapperIgnoreSource(nameof(DiscoveredUrl.DiscoveredAt))]
+    [MapperIgnoreSource(nameof(DiscoveredUrl.LastFetchId))]
     private static partial ScheduledUrl MapToScheduledUrl(DiscoveredUrl discoveredUrl);
 
     private static ScheduledUrl ToScheduledUrl(DiscoveredUrl discoveredUrl)
