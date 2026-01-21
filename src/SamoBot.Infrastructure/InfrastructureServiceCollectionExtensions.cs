@@ -11,7 +11,8 @@ using SamoBot.Infrastructure.Data;
 using SamoBot.Infrastructure.Database;
 using SamoBot.Infrastructure.Options;
 using SamoBot.Infrastructure.Producers;
-using SamoBot.Infrastructure.Services;
+using SamoBot.Infrastructure.Policies;
+using SamoBot.Infrastructure.Storage.Abstractions;
 using SamoBot.Infrastructure.Storage.Services;
 using SqlKata.Compilers;
 using SqlKata.Execution;
@@ -90,7 +91,13 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddSingleton<IUrlScheduler, UrlScheduler>();
         services.AddScoped<IDiscoveredUrlRepository, DiscoveredUrlRepository>();
-        // IUrlFetchRepository - interface defined, implementation to be added later
+        services.AddScoped<IUrlFetchRepository, UrlFetchRepository>();
+        services.AddScoped<IUrlFetchService, UrlFetchService>();
+        services.AddSingleton<IHtmlContentValidator, HtmlContentValidator>();
+        services.AddScoped<IMinioHtmlUploader, MinioHtmlUploader>();
+        services.AddScoped<IObjectNameGenerator, ObjectNameGenerator>();
+        services.AddScoped<IFetchRecordPersistenceService, FetchRecordPersistenceService>();
+        services.AddScoped<IContentProcessingPipeline, ContentProcessingPipeline>();
 
         services.AddScoped<IMinioClient>(sp =>
         {
@@ -113,18 +120,15 @@ public static class InfrastructureServiceCollectionExtensions
             
             return client.Build();
         });
-
-        services.AddSingleton<IDomainRateLimiter, DomainRateLimiter>();
         
         services.AddSingleton<IAsyncPolicy<HttpResponseMessage>>(sp =>
         {
             var crawlerOptions = sp.GetRequiredService<IOptions<CrawlerOptions>>().Value;
             var logger = sp.GetRequiredService<ILogger<MinioStorageManager>>();
-            return CrawlerPolicyBuilder.BuildRetryPolicy(crawlerOptions, logger);
+            return CrawlerRetryPolicyBuilder.BuildRetryPolicy(crawlerOptions, logger);
         });
         
-        services.AddScoped<IContentUploadBuilderFactory, ContentUploadBuilderFactory>();
-        services.AddScoped<IStorageManager, MinioStorageManager>();
+        services.AddScoped<Storage.Abstractions.IStorageManager, MinioStorageManager>();
         
         services.AddHttpClient("crawl")
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler

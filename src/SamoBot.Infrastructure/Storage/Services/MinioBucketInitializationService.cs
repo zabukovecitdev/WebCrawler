@@ -2,6 +2,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SamoBot.Infrastructure.Options;
+using SamoBot.Infrastructure.Storage.Abstractions;
 
 namespace SamoBot.Infrastructure.Storage.Services;
 

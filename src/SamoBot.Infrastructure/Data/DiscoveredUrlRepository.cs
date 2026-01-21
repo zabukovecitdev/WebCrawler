@@ -132,20 +132,25 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
         await transaction.Connection.ExecuteAsync(command);
     }
 
-    public async Task<bool> UpdateAfterFetch(int discoveredUrlId, int fetchId, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAfterFetch(int discoveredUrlId, int? fetchId, CancellationToken cancellationToken = default)
     {
-        var discoveredUrl = await GetById(discoveredUrlId, cancellationToken);
-        if (discoveredUrl == null)
-        {
-            return false;
-        }
-        
         var now = timeProvider.GetUtcNow();
-        discoveredUrl.LastCrawlAt = now.ToUniversalTime();
-        discoveredUrl.NextCrawlAt = now.AddDays(1).ToUniversalTime();
-        discoveredUrl.LastFetchId = fetchId;
-        discoveredUrl.Status = UrlStatus.Idle;
+        var updateFields = new Dictionary<string, object?>
+        {
+            { nameof(DiscoveredUrl.LastCrawlAt), now.ToUniversalTime() },
+            { nameof(DiscoveredUrl.NextCrawlAt), now.AddDays(1).ToUniversalTime() },
+            { nameof(DiscoveredUrl.Status), nameof(UrlStatus.Idle) }
+        };
 
-        return await Update(discoveredUrl, cancellationToken);
+        if (fetchId.HasValue)
+        {
+            updateFields[nameof(DiscoveredUrl.LastFetchId)] = fetchId.Value;
+        }
+
+        var affected = await queryFactory.Query(TableNames.Database.DiscoveredUrls)
+            .Where(nameof(DiscoveredUrl.Id), discoveredUrlId)
+            .UpdateAsync(updateFields, cancellationToken: cancellationToken);
+
+        return affected > 0;
     }
 }

@@ -11,5 +11,5 @@ public interface IDiscoveredUrlRepository : IRepository<DiscoveredUrl>
     Task<IEnumerable<DiscoveredUrl>> GetReadyForCrawling(int limit, IDbTransaction? transaction = null,
         CancellationToken cancellationToken = default);
     Task UpdateStatusToInFlight(IEnumerable<int> ids, IDbTransaction transaction, CancellationToken cancellationToken = default);
-    Task<bool> UpdateAfterFetch(int discoveredUrlId, int fetchId, CancellationToken cancellationToken = default);
+    Task<bool> UpdateAfterFetch(int discoveredUrlId, int? fetchId, CancellationToken cancellationToken = default);
 }
