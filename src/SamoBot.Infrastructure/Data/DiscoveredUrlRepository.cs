@@ -91,7 +91,7 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
     public async Task<IEnumerable<DiscoveredUrl>> GetReadyForCrawling(int limit, IDbTransaction? transaction = null,
         CancellationToken cancellationToken = default)
     {
-        // TODO This will fail ehen there are multiple workers. Needs FOR UPDATE SKIP LOCKED
+        // TODO This will fail wehen there are multiple workers. Needs FOR UPDATE SKIP LOCKED
         return await queryFactory.Query(TableNames.Database.DiscoveredUrls)
             .Select()
             .Where(nameof(DiscoveredUrl.Status), nameof(UrlStatus.Idle))

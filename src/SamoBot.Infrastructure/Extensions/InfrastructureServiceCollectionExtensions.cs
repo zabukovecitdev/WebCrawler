@@ -5,19 +5,20 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Minio;
 using Polly;
-using StackExchange.Redis;
 using SamoBot.Infrastructure.Abstractions;
+using SamoBot.Infrastructure.Cache;
 using SamoBot.Infrastructure.Data;
 using SamoBot.Infrastructure.Database;
 using SamoBot.Infrastructure.Options;
-using SamoBot.Infrastructure.Producers;
 using SamoBot.Infrastructure.Policies;
+using SamoBot.Infrastructure.Producers;
 using SamoBot.Infrastructure.Storage.Abstractions;
 using SamoBot.Infrastructure.Storage.Services;
 using SqlKata.Compilers;
 using SqlKata.Execution;
+using StackExchange.Redis;
 
-namespace SamoBot.Infrastructure;
+namespace SamoBot.Infrastructure.Extensions;
 
 public static class InfrastructureServiceCollectionExtensions
 {
@@ -88,6 +89,8 @@ public static class InfrastructureServiceCollectionExtensions
                 return null;
             }
         });
+
+        services.AddScoped<ICache, RedisCache>();
 
         services.AddSingleton<IUrlScheduler, UrlScheduler>();
         services.AddScoped<IDiscoveredUrlRepository, DiscoveredUrlRepository>();

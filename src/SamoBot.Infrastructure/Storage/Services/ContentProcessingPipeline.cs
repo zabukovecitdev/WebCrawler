@@ -2,8 +2,10 @@ using FluentResults;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Samobot.Domain.Models;
+using SamoBot.Infrastructure.Abstractions;
 using SamoBot.Infrastructure.Options;
 using SamoBot.Infrastructure.Storage.Abstractions;
+using SamoBot.Infrastructure.Utilities;
 
 namespace SamoBot.Infrastructure.Storage.Services;
 
@@ -16,6 +18,8 @@ public class ContentProcessingPipeline : IContentProcessingPipeline
     private readonly IObjectNameGenerator _objectNameGenerator;
     private readonly MinioOptions _minioOptions;
     private readonly ILogger<ContentProcessingPipeline> _logger;
+    private readonly ICache _cache;
+    private readonly TimeProvider _timeProvider;
 
     public ContentProcessingPipeline(
         IUrlFetchService fetchService,
@@ -24,7 +28,9 @@ public class ContentProcessingPipeline : IContentProcessingPipeline
         IFetchRecordPersistenceService persistenceService,
         IObjectNameGenerator objectNameGenerator,
         IOptions<MinioOptions> minioOptions,
-        ILogger<ContentProcessingPipeline> logger)
+        ILogger<ContentProcessingPipeline> logger, 
+        ICache cache,
+        TimeProvider timeProvider)
     {
         _fetchService = fetchService;
         _htmlContentValidator = htmlContentValidator;
@@ -33,64 +39,65 @@ public class ContentProcessingPipeline : IContentProcessingPipeline
         _objectNameGenerator = objectNameGenerator;
         _minioOptions = minioOptions.Value;
         _logger = logger;
+        _cache = cache;
+        _timeProvider = timeProvider;
     }
 
-    public async Task<Result<UrlContentMetadata>> ProcessContentAsync(
-        ScheduledUrl scheduledUrl,
+    public async Task<Result<UrlContentMetadata>> ProcessContent(ScheduledUrl scheduledUrl,
         CancellationToken cancellationToken = default)
     {
         var url = scheduledUrl.Url;
-        var bucket = _minioOptions.BucketName;
-        var fetchResult = await _fetchService.Fetch(url, cancellationToken);
-
-        if (fetchResult.Error != null)
+        var host = scheduledUrl.Host;
+        var now = _timeProvider.GetUtcNow();
+        var currentTimestamp = now.ToUnixTimeMilliseconds();
+        
+        var lastCrawlResult = await _cache.GetAsync(CacheKey.UrlNextCrawl(host), cancellationToken);
+        if (lastCrawlResult.IsSuccess && lastCrawlResult.Value != null)
         {
-            await PersistFailureIfNeededAsync(scheduledUrl.Id, fetchResult, cancellationToken);
-            return Result.Fail(fetchResult.Error);
+            if (long.TryParse(lastCrawlResult.Value, out var lastCrawlTimestamp))
+            {
+                var timeSinceLastCrawl = currentTimestamp - lastCrawlTimestamp;
+                const long oneMinuteInMs = TimeSpan.MillisecondsPerSecond;
+                
+                if (timeSinceLastCrawl < oneMinuteInMs)
+                {
+                    // Host was crawled less than 1 minute ago, enqueue for later
+                    var dueTimestamp = lastCrawlTimestamp + oneMinuteInMs;
+                    var enqueueResult = await _cache.EnqueueDueAsync(url.ToString(), dueTimestamp, cancellationToken);
+                    
+                    if (enqueueResult.IsFailed)
+                    {
+                        _logger.LogWarning("Failed to enqueue URL {Url} to due queue: {Errors}", 
+                            url, string.Join("; ", enqueueResult.Errors.Select(e => e.Message)));
+                        return Result.Fail<UrlContentMetadata>(enqueueResult.Errors);
+                    }
+                    
+                    _logger.LogInformation("Enqueued URL {Url} for host {Host} due at {DueTime}", 
+                        url, host, DateTimeOffset.FromUnixTimeMilliseconds(dueTimestamp));
+                    
+                    return Result.Ok(new UrlContentMetadata
+                    {
+                        ContentType = string.Empty,
+                        ContentLength = -1,
+                        StatusCode = 0
+                    });
+                }
+            }
         }
+        
+        var lockResult = await _cache.SetAsync(CacheKey.UrlLock(host), currentTimestamp.ToString(), TimeSpan.FromSeconds(2), cancellationToken);
 
-        if (fetchResult.ContentBytes == null || fetchResult.ContentBytes.Length == 0)
+        if (lockResult.IsFailed)
         {
-            var error = $"Empty response content for {url}";
-            await PersistFailureIfNeededAsync(scheduledUrl.Id, fetchResult, cancellationToken);
-            
-            return Result.Fail(error);
+            return Result.Fail<UrlContentMetadata>(lockResult.Errors);
         }
-
-        if (!_htmlContentValidator.IsHtml(fetchResult.ContentType, fetchResult.ContentBytes))
-        {
-            _logger.LogInformation(
-                "Skipping upload for {Url} because content is not HTML (ContentType: {ContentType})",
-                url,
-                fetchResult.ContentType ?? "unknown");
-            
-            var error = $"Content is not HTML for {url}";
-            
-            await PersistFailureIfNeededAsync(scheduledUrl.Id, fetchResult, cancellationToken);
-            
-            return Result.Fail(error);
-        }
-
-        var objectName = _objectNameGenerator.GenerateHierarchical(url, fetchResult.ContentType);
-        var uploadResult = await _htmlUploader.Upload(
-            bucket,
-            objectName,
-            fetchResult.ContentBytes,
-            fetchResult.ContentType,
-            cancellationToken);
-
-        if (uploadResult.Error != null)
-        {
-            await PersistFailureIfNeededAsync(scheduledUrl.Id, fetchResult, cancellationToken);
-            
-            return Result.Fail(uploadResult.Error);
-        }
-
-        await PersistSuccessIfNeededAsync(
-            scheduledUrl.Id,
-            fetchResult,
-            uploadResult.ObjectName,
-            cancellationToken);
+        
+        var fetchResult = await _fetchService.Fetch(url.ToString(), cancellationToken);
+        _logger.LogInformation("PROCESSING URL {Url} for host {Host}", 
+            url, host);
+        await _cache.RemoveAsync(CacheKey.UrlLock(host), cancellationToken);
+        
+        await _cache.SetAsync(CacheKey.UrlNextCrawl(host), currentTimestamp.ToString(), cancellationToken: cancellationToken);
 
         return Result.Ok(new UrlContentMetadata
         {
@@ -98,34 +105,5 @@ public class ContentProcessingPipeline : IContentProcessingPipeline
             ContentLength = fetchResult.ContentLength ?? -1,
             StatusCode = fetchResult.StatusCode
         });
-    }
-
-    private async Task PersistFailureIfNeededAsync(
-        int discoveredUrlId,
-        FetchedContent fetchResult,
-        CancellationToken cancellationToken)
-    {
-        await _persistenceService.PersistFetchRecordAsync(
-            discoveredUrlId,
-            fetchResult.StatusCode,
-            fetchResult.ContentType,
-            fetchResult.ContentLength,
-            objectName: null,
-            cancellationToken);
-    }
-
-    private async Task PersistSuccessIfNeededAsync(
-        int discoveredUrlId,
-        FetchedContent fetchResult,
-        string? objectName,
-        CancellationToken cancellationToken)
-    {
-        await _persistenceService.PersistFetchRecordAsync(
-            discoveredUrlId,
-            fetchResult.StatusCode,
-            fetchResult.ContentType,
-            fetchResult.ContentLength,
-            objectName,
-            cancellationToken);
     }
 }

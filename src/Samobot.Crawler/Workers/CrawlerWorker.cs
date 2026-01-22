@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using FluentResults;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -73,7 +74,15 @@ public class CrawlerWorker : BackgroundService
                     return;
                 }
 
-                await ProcessMessage(scheduledUrl, cancellationToken);
+                var result = await ProcessMessage(scheduledUrl, cancellationToken);
+
+                if (result.IsFailed)
+                {
+                    _logger.LogError("Failed to process message: {Errors}", string.Join("; ", result.Errors.Select(e => e.Message)));
+                    _channel.BasicNack(args.DeliveryTag, multiple: false, requeue: true);
+                    
+                    return;
+                }
                 _channel.BasicAck(args.DeliveryTag, multiple: false);
             }
             catch (JsonException ex)
@@ -112,7 +121,7 @@ public class CrawlerWorker : BackgroundService
         await base.StopAsync(cancellationToken);
     }
 
-    private async Task ProcessMessage(ScheduledUrl scheduledUrl, CancellationToken cancellationToken)
+    private async Task<Result<UrlContentMetadata>> ProcessMessage(ScheduledUrl scheduledUrl, CancellationToken cancellationToken)
     {
         _logger.LogInformation(
             "Processing ScheduledUrl - ID: {Id}, URL: {Url}, Priority: {Priority}",
@@ -121,7 +130,7 @@ public class CrawlerWorker : BackgroundService
         using var scope = _serviceProvider.CreateScope();
         var contentPipeline = scope.ServiceProvider.GetRequiredService<IContentProcessingPipeline>();
 
-        var uploadResult = await contentPipeline.ProcessContentAsync(
+        var uploadResult = await contentPipeline.ProcessContent(
             scheduledUrl,
             cancellationToken);
 
@@ -134,5 +143,7 @@ public class CrawlerWorker : BackgroundService
         {
             _logger.LogInformation("Successfully uploaded content for URL {Url}", scheduledUrl.Url);
         }
+        
+        return uploadResult;
     }
 }

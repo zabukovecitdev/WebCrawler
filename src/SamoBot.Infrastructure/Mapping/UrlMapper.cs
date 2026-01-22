@@ -9,7 +9,6 @@ public static partial class UrlMapper
     [MapProperty(nameof(DiscoveredUrl.Id), nameof(ScheduledUrl.Id))]
     [MapProperty(nameof(DiscoveredUrl.Priority), nameof(ScheduledUrl.Priority))]
     [MapperIgnoreTarget(nameof(ScheduledUrl.Url))]
-    [MapperIgnoreSource(nameof(DiscoveredUrl.Host))]
     [MapperIgnoreSource(nameof(DiscoveredUrl.Url))]
     [MapperIgnoreSource(nameof(DiscoveredUrl.NormalizedUrl))]
     [MapperIgnoreSource(nameof(DiscoveredUrl.Status))]

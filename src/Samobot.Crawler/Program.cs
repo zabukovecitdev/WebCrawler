@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SamoBot.Infrastructure;
 using Samobot.Crawler.Workers;
+using SamoBot.Infrastructure.Extensions;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -15,6 +16,7 @@ builder.Configuration
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHostedService<CrawlerWorker>();
+builder.Services.AddHostedService<DueQueueWorker>();
 
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();

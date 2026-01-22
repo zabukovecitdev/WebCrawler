@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using SamoBot.Consumers;
 using SamoBot.Infrastructure;
 using SamoBot.Infrastructure.Abstractions;
+using SamoBot.Infrastructure.Extensions;
 using SamoBot.Workers;
 
 var builder = Host.CreateApplicationBuilder(args);
