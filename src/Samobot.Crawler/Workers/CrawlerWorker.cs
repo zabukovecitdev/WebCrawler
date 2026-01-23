@@ -142,6 +142,10 @@ public class CrawlerWorker : BackgroundService
             _logger.LogError("Failed to upload content for URL {Url}: {Errors}", 
                 scheduledUrl.Url, string.Join("; ", uploadResult.Errors.Select(e => e.Message)));
         }
+        else if (uploadResult.Value.WasDeferred)
+        {
+            _logger.LogInformation("Deferred URL {Url} for later processing", scheduledUrl.Url);
+        }
         else
         {
             _logger.LogInformation("Successfully uploaded content for URL {Url}", scheduledUrl.Url);

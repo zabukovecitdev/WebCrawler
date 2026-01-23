@@ -103,6 +103,10 @@ public class DueQueueWorker : BackgroundService
                     _logger.LogWarning("Failed to process URL {Url} from due queue: {Errors}",
                         urlString, string.Join("; ", result.Errors.Select(e => e.Message)));
                 }
+                else if (result.Value.WasDeferred)
+                {
+                    _logger.LogInformation("Deferred URL {Url} again; still not due", urlString);
+                }
                 else
                 {
                     _logger.LogDebug("Successfully processed URL {Url} from due queue", urlString);

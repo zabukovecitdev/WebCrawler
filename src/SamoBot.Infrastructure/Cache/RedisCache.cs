@@ -102,35 +102,91 @@ public class RedisCache : ICache
         }
     }
 
-    public async Task<Result<bool>> TrySetAsync(string key, string value, TimeSpan? ttl = null, CancellationToken cancellationToken = default)
+    public async Task<Result<(bool Allowed, long NextAllowedTimestamp)>> TryClaimNextCrawlAsync(
+        string key,
+        long currentTimestamp,
+        long delayMs,
+        CancellationToken cancellationToken = default)
     {
         var database = GetDatabase();
         if (database == null)
         {
             var error = "Redis connection is not available";
-            _logger.LogWarning("Cannot try set cache key {Key}: {Error}", key, error);
+            _logger.LogWarning("Cannot claim next crawl for key {Key}: {Error}", key, error);
             return Result.Fail(error);
         }
 
         try
         {
-            bool wasSet;
-            if (ttl.HasValue)
+            const string luaScript = @"
+                local key = KEYS[1]
+                local now = tonumber(ARGV[1])
+                local delay = tonumber(ARGV[2])
+                local next = redis.call('GET', key)
+
+                if not next then
+                    local new_next = now + delay
+                    redis.call('SET', key, new_next)
+                    return {1, new_next}
+                end
+
+                local next_num = tonumber(next)
+                if (not next_num) or (next_num <= now) then
+                    local new_next = now + delay
+                    redis.call('SET', key, new_next)
+                    return {1, new_next}
+                end
+
+                return {0, next_num}
+            ";
+
+            var result = await database.ScriptEvaluateAsync(
+                luaScript,
+                new RedisKey[] { key },
+                new RedisValue[] { currentTimestamp, delayMs });
+
+            if (result.IsNull)
             {
-                wasSet = await database.StringSetAsync(key, value, ttl.Value, when: When.NotExists);
-            }
-            else
-            {
-                wasSet = await database.StringSetAsync(key, value, when: When.NotExists);
+                var error = "Redis script returned null for next crawl claim";
+                _logger.LogWarning("Cannot claim next crawl for key {Key}: {Error}", key, error);
+                return Result.Fail(error);
             }
 
-            _logger.LogDebug("Try set cache key {Key} with TTL {Ttl}: {WasSet}", key, ttl, wasSet);
-            return Result.Ok(wasSet);
+            var values = (RedisValue[])result!;
+            if (values.Length < 2)
+            {
+                var error = "Redis script returned unexpected result for next crawl claim";
+                _logger.LogWarning("Cannot claim next crawl for key {Key}: {Error}", key, error);
+                return Result.Fail(error);
+            }
+
+            if (!long.TryParse(values[0].ToString(), out var allowedFlag))
+            {
+                var error = "Redis script returned invalid allowed flag for next crawl claim";
+                _logger.LogWarning("Cannot claim next crawl for key {Key}: {Error}", key, error);
+                return Result.Fail(error);
+            }
+
+            if (!long.TryParse(values[1].ToString(), out var nextAllowedTimestamp))
+            {
+                var error = "Redis script returned invalid timestamp for next crawl claim";
+                _logger.LogWarning("Cannot claim next crawl for key {Key}: {Error}", key, error);
+                return Result.Fail(error);
+            }
+
+            var allowed = allowedFlag == 1;
+            _logger.LogDebug(
+                "Next crawl claim for key {Key}: allowed={Allowed}, next={NextAllowedTimestamp}",
+                key,
+                allowed,
+                nextAllowedTimestamp);
+
+            return Result.Ok((allowed, nextAllowedTimestamp));
         }
         catch (Exception ex)
         {
-            var error = $"Error trying to set cache key {key}: {ex.Message}";
-            _logger.LogError(ex, "Error trying to set cache key {Key}", key);
+            var error = $"Error claiming next crawl for key {key}: {ex.Message}";
+            _logger.LogError(ex, "Error claiming next crawl for key {Key}", key);
             return Result.Fail(error);
         }
     }
