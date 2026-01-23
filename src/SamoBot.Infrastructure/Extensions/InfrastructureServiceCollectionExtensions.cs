@@ -14,6 +14,7 @@ using SamoBot.Infrastructure.Policies;
 using SamoBot.Infrastructure.Producers;
 using SamoBot.Infrastructure.Storage.Abstractions;
 using SamoBot.Infrastructure.Storage.Services;
+using SamoBot.Infrastructure.Utilities;
 using SqlKata.Compilers;
 using SqlKata.Execution;
 using StackExchange.Redis;
@@ -91,6 +92,7 @@ public static class InfrastructureServiceCollectionExtensions
         });
 
         services.AddScoped<ICache, RedisCache>();
+        services.AddSingleton<InstanceIdProvider>();
 
         services.AddSingleton<IUrlScheduler, UrlScheduler>();
         services.AddScoped<IDiscoveredUrlRepository, DiscoveredUrlRepository>();

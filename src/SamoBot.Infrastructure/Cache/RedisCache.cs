@@ -55,12 +55,12 @@ public class RedisCache : ICache
             if (!value.HasValue)
             {
                 _logger.LogDebug("Cache key {Key} not found", key);
-                return Result.Ok((string?)null);
+                return Result.Ok<string?>(null);
             }
 
             var result = value.ToString();
             _logger.LogDebug("Retrieved cache key {Key}", key);
-            return Result.Ok((string?)result);
+            return Result.Ok<string?>(result);
         }
         catch (Exception ex)
         {
@@ -84,11 +84,11 @@ public class RedisCache : ICache
         {
             if (ttl.HasValue)
             {
-                await database.StringSetAsync(key, value, ttl.Value, when: When.NotExists);
+                await database.StringSetAsync(key, value, ttl.Value);
             }
             else
             {
-                await database.StringSetAsync(key, value, when: When.NotExists);
+                await database.StringSetAsync(key, value);
             }
 
             _logger.LogDebug("Set cache key {Key} with TTL {Ttl}", key, ttl);
@@ -98,6 +98,39 @@ public class RedisCache : ICache
         {
             var error = $"Error setting cache key {key}: {ex.Message}";
             _logger.LogError(ex, "Error setting cache key {Key}", key);
+            return Result.Fail(error);
+        }
+    }
+
+    public async Task<Result<bool>> TrySetAsync(string key, string value, TimeSpan? ttl = null, CancellationToken cancellationToken = default)
+    {
+        var database = GetDatabase();
+        if (database == null)
+        {
+            var error = "Redis connection is not available";
+            _logger.LogWarning("Cannot try set cache key {Key}: {Error}", key, error);
+            return Result.Fail(error);
+        }
+
+        try
+        {
+            bool wasSet;
+            if (ttl.HasValue)
+            {
+                wasSet = await database.StringSetAsync(key, value, ttl.Value, when: When.NotExists);
+            }
+            else
+            {
+                wasSet = await database.StringSetAsync(key, value, when: When.NotExists);
+            }
+
+            _logger.LogDebug("Try set cache key {Key} with TTL {Ttl}: {WasSet}", key, ttl, wasSet);
+            return Result.Ok(wasSet);
+        }
+        catch (Exception ex)
+        {
+            var error = $"Error trying to set cache key {key}: {ex.Message}";
+            _logger.LogError(ex, "Error trying to set cache key {Key}", key);
             return Result.Fail(error);
         }
     }

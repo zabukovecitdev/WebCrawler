@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using FluentResults;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -36,7 +37,7 @@ public class CrawlerWorker : BackgroundService
         _serviceProvider = serviceProvider;
     }
 
-    protected override async Task ExecuteAsync(CancellationToken cancellationToken = default)
+    protected override Task ExecuteAsync(CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Crawler worker starting...");
 
@@ -107,8 +108,12 @@ public class CrawlerWorker : BackgroundService
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            await Task.Delay(1000, cancellationToken);
+            Thread.Sleep(1000);
+            if (cancellationToken.IsCancellationRequested)
+                break;
         }
+        
+        return Task.CompletedTask;
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
@@ -130,9 +135,7 @@ public class CrawlerWorker : BackgroundService
         using var scope = _serviceProvider.CreateScope();
         var contentPipeline = scope.ServiceProvider.GetRequiredService<IContentProcessingPipeline>();
 
-        var uploadResult = await contentPipeline.ProcessContent(
-            scheduledUrl,
-            cancellationToken);
+        var uploadResult = await contentPipeline.ProcessContent(scheduledUrl, cancellationToken);
 
         if (uploadResult.IsFailed)
         {

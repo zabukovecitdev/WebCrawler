@@ -26,6 +26,16 @@ public interface ICache
     Task<Result> SetAsync(string key, string value, TimeSpan? ttl = null, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Attempts to set a key-value pair in the cache only if the key does not exist (atomic operation for distributed locking)
+    /// </summary>
+    /// <param name="key">The cache key</param>
+    /// <param name="value">The value to store</param>
+    /// <param name="ttl">Optional time-to-live. If null, the key will not expire</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Result containing true if the key was set (lock acquired), false if the key already exists (lock not acquired)</returns>
+    Task<Result<bool>> TrySetAsync(string key, string value, TimeSpan? ttl = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Removes a key from the cache
     /// </summary>
     /// <param name="key">The cache key to remove</param>
