@@ -7,6 +7,7 @@ public interface IFetchRecordPersistenceService
         int statusCode,
         string? contentType,
         long? contentLength,
+        long? responseTimeMs,
         string? objectName,
         CancellationToken cancellationToken = default);
 }

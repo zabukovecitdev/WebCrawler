@@ -29,6 +29,7 @@ public class FetchRecordPersistenceService : IFetchRecordPersistenceService
         int statusCode,
         string? contentType,
         long? contentLength,
+        long? responseTimeMs,
         string? objectName,
         CancellationToken cancellationToken = default)
     {
@@ -37,6 +38,7 @@ public class FetchRecordPersistenceService : IFetchRecordPersistenceService
             statusCode,
             contentType,
             contentLength,
+            responseTimeMs,
             objectName,
             cancellationToken);
 
@@ -54,6 +56,7 @@ public class FetchRecordPersistenceService : IFetchRecordPersistenceService
         int statusCode,
         string? contentType,
         long? contentLength,
+        long? responseTimeMs,
         string? objectName,
         CancellationToken cancellationToken)
     {
@@ -66,6 +69,7 @@ public class FetchRecordPersistenceService : IFetchRecordPersistenceService
                 StatusCode = statusCode,
                 ContentType = contentType,
                 ContentLength = contentLength,
+                ResponseTimeMs = responseTimeMs,
                 ObjectName = objectName
             };
 

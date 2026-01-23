@@ -29,6 +29,7 @@ public class UrlFetchRepository(QueryFactory queryFactory) : IUrlFetchRepository
                 entity.StatusCode,
                 entity.ContentType,
                 entity.ContentLength,
+                entity.ResponseTimeMs,
                 entity.ObjectName
             }, cancellationToken: cancellationToken);
     }
@@ -44,6 +45,7 @@ public class UrlFetchRepository(QueryFactory queryFactory) : IUrlFetchRepository
                 entity.StatusCode,
                 entity.ContentType,
                 entity.ContentLength,
+                entity.ResponseTimeMs,
                 entity.ObjectName
             }, cancellationToken: cancellationToken);
 

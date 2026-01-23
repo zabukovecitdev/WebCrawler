@@ -23,7 +23,8 @@ public class UrlFetchService : IUrlFetchService
 
     public async Task<FetchedContent> Fetch(string url, CancellationToken cancellationToken = default)
     {
-        HttpResponseMessage? response;
+        HttpResponseMessage? response = null;
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         try
         {
             response = await _retryPolicy.ExecuteAsync(async () =>
@@ -41,7 +42,8 @@ public class UrlFetchService : IUrlFetchService
             return new FetchedContent
             {
                 StatusCode = 0,
-                Error = $"Failed to fetch {url}: {ex.Message}"
+                Error = $"Failed to fetch {url}: {ex.Message}",
+                ResponseTimeMs = stopwatch.ElapsedMilliseconds
             };
         }
 
@@ -50,7 +52,8 @@ public class UrlFetchService : IUrlFetchService
             return new FetchedContent
             {
                 StatusCode = 0,
-                Error = $"Failed to fetch {url}"
+                Error = $"Failed to fetch {url}",
+                ResponseTimeMs = stopwatch.ElapsedMilliseconds
             };
         }
 
@@ -71,7 +74,8 @@ public class UrlFetchService : IUrlFetchService
                     ContentType = contentType,
                     ContentBytes = contentBytes,
                     ContentLength = contentLength,
-                    Error = $"Empty response content for {url}"
+                    Error = $"Empty response content for {url}",
+                    ResponseTimeMs = stopwatch.ElapsedMilliseconds
                 };
             }
 
@@ -80,7 +84,8 @@ public class UrlFetchService : IUrlFetchService
                 StatusCode = statusCode,
                 ContentType = contentType,
                 ContentBytes = contentBytes,
-                ContentLength = contentLength
+                ContentLength = contentLength,
+                ResponseTimeMs = stopwatch.ElapsedMilliseconds
             };
         }
         catch (Exception ex)
@@ -90,11 +95,13 @@ public class UrlFetchService : IUrlFetchService
             {
                 StatusCode = statusCode,
                 ContentType = contentType,
-                Error = $"Failed to read content from {url}: {ex.Message}"
+                Error = $"Failed to read content from {url}: {ex.Message}",
+                ResponseTimeMs = stopwatch.ElapsedMilliseconds
             };
         }
         finally
         {
+            stopwatch.Stop();
             response.Dispose();
         }
     }

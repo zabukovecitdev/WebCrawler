@@ -48,7 +48,24 @@ public class ContentProcessingPipeline : IContentProcessingPipeline
             scheduledUrl,
             async ct =>
             {
-                var fetchResult = await _fetchService.Fetch(url, ct);
+                var fetchResult = await FetchContentAsync(url, ct);
+                var objectName = await UploadHtmlAsync(url, fetchResult, ct);
+
+                if (scheduledUrl.Id > 0)
+                {
+                    await _persistenceService.PersistFetchRecordAsync(
+                        scheduledUrl.Id,
+                        fetchResult.StatusCode,
+                        fetchResult.ContentType,
+                        fetchResult.ContentLength,
+                        fetchResult.ResponseTimeMs,
+                        objectName,
+                        ct);
+                }
+                else
+                {
+                    _logger.LogDebug("Skipping fetch record persistence for URL {Url} because DiscoveredUrlId is missing", url);
+                }
 
                 return Result.Ok(new UrlContentMetadata
                 {
@@ -59,5 +76,39 @@ public class ContentProcessingPipeline : IContentProcessingPipeline
                 });
             },
             cancellationToken);
+    }
+
+    private Task<FetchedContent> FetchContentAsync(string url, CancellationToken cancellationToken)
+    {
+        return _fetchService.Fetch(url, cancellationToken);
+    }
+
+    private async Task<string?> UploadHtmlAsync(string url, FetchedContent fetchResult, CancellationToken cancellationToken)
+    {
+        if (fetchResult.ContentBytes is not { Length: > 0 } contentBytes)
+        {
+            return null;
+        }
+
+        if (!_htmlContentValidator.IsHtml(fetchResult.ContentType, contentBytes))
+        {
+            return null;
+        }
+
+        var generatedObjectName = _objectNameGenerator.GenerateHierarchical(url, fetchResult.ContentType);
+        var uploadResult = await _htmlUploader.Upload(
+            _minioOptions.BucketName,
+            generatedObjectName,
+            contentBytes,
+            fetchResult.ContentType,
+            cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(uploadResult.Error))
+        {
+            _logger.LogWarning("Failed to upload HTML for {Url}: {Error}", url, uploadResult.Error);
+            return null;
+        }
+
+        return uploadResult.ObjectName;
     }
 }

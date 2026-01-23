@@ -7,4 +7,5 @@ public class FetchedContent
     public byte[]? ContentBytes { get; init; }
     public long? ContentLength { get; init; }
     public string? Error { get; init; }
+    public long? ResponseTimeMs { get; init; }
 }

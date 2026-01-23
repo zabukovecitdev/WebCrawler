@@ -8,6 +8,7 @@ public class UrlFetch
     public int StatusCode { get; set; }
     public string? ContentType { get; set; }
     public long? ContentLength { get; set; }
+    public long? ResponseTimeMs { get; set; }
     public string? ObjectName { get; set; }
     public DiscoveredUrl? DiscoveredUrl { get; set; }
 }
