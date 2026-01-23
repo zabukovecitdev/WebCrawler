@@ -8,6 +8,7 @@ public static class CrawlerRetryHandler
     public static bool ShouldRetryOnStatusCode(HttpResponseMessage response, CrawlerOptions options)
     {
         var statusCode = (int)response.StatusCode;
+        
         return options.BackoffStatusCodes.Contains(statusCode);
     }
 }

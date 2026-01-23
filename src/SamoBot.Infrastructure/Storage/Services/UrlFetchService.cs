@@ -23,7 +23,7 @@ public class UrlFetchService : IUrlFetchService
 
     public async Task<FetchedContent> Fetch(string url, CancellationToken cancellationToken = default)
     {
-        HttpResponseMessage? response = null;
+        HttpResponseMessage? response;
         try
         {
             response = await _retryPolicy.ExecuteAsync(async () =>

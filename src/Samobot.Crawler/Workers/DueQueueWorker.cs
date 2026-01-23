@@ -58,7 +58,7 @@ public class DueQueueWorker : BackgroundService
         var contentPipeline = scope.ServiceProvider.GetRequiredService<IContentProcessingPipeline>();
 
         var currentTimestamp = _timeProvider.GetUtcNow().ToUnixTimeMilliseconds();
-        var dequeueResult = await cache.DequeueDueAsync(currentTimestamp, BatchSize, cancellationToken);
+        var dequeueResult = await cache.Dequeue(currentTimestamp, BatchSize, cancellationToken);
 
         if (dequeueResult.IsFailed)
         {

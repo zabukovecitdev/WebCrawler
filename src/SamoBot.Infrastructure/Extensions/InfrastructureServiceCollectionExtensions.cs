@@ -91,6 +91,7 @@ public static class InfrastructureServiceCollectionExtensions
         });
 
         services.AddScoped<ICache, RedisCache>();
+        services.AddScoped<ICrawlPolicy, PolitenessPolicy>();
 
         services.AddSingleton<IUrlScheduler, UrlScheduler>();
         services.AddScoped<IDiscoveredUrlRepository, DiscoveredUrlRepository>();

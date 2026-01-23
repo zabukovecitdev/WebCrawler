@@ -8,9 +8,6 @@ using SamoBot.Infrastructure.Utilities;
 
 namespace SamoBot.Infrastructure.Cache;
 
-/// <summary>
-/// Redis implementation of the ICache interface
-/// </summary>
 public class RedisCache : ICache
 {
     private readonly IConnectionMultiplexer? _connectionMultiplexer;
@@ -32,6 +29,7 @@ public class RedisCache : ICache
         if (_connectionMultiplexer == null || !_connectionMultiplexer.IsConnected)
         {
             _logger.LogWarning("Redis connection is not available");
+            
             return null;
         }
 
@@ -45,6 +43,7 @@ public class RedisCache : ICache
         {
             var error = "Redis connection is not available";
             _logger.LogWarning("Cannot get cache key {Key}: {Error}", key, error);
+            
             return Result.Fail(error);
         }
 
@@ -60,12 +59,14 @@ public class RedisCache : ICache
 
             var result = value.ToString();
             _logger.LogDebug("Retrieved cache key {Key}", key);
+            
             return Result.Ok<string?>(result);
         }
         catch (Exception ex)
         {
             var error = $"Error getting cache key {key}: {ex.Message}";
             _logger.LogError(ex, "Error getting cache key {Key}", key);
+            
             return Result.Fail(error);
         }
     }
@@ -92,6 +93,7 @@ public class RedisCache : ICache
             }
 
             _logger.LogDebug("Set cache key {Key} with TTL {Ttl}", key, ttl);
+            
             return Result.Ok();
         }
         catch (Exception ex)
@@ -102,7 +104,7 @@ public class RedisCache : ICache
         }
     }
 
-    public async Task<Result<(bool Allowed, long NextAllowedTimestamp)>> TryClaimNextCrawlAsync(
+    public async Task<Result<(bool Allowed, long NextAllowedTimestamp)>> TryClaimNextCrawl(
         string key,
         long currentTimestamp,
         long delayMs,
@@ -113,6 +115,7 @@ public class RedisCache : ICache
         {
             var error = "Redis connection is not available";
             _logger.LogWarning("Cannot claim next crawl for key {Key}: {Error}", key, error);
+            
             return Result.Fail(error);
         }
 
@@ -142,8 +145,8 @@ public class RedisCache : ICache
 
             var result = await database.ScriptEvaluateAsync(
                 luaScript,
-                new RedisKey[] { key },
-                new RedisValue[] { currentTimestamp, delayMs });
+                [key],
+                [currentTimestamp, delayMs]);
 
             if (result.IsNull)
             {
@@ -164,6 +167,7 @@ public class RedisCache : ICache
             {
                 var error = "Redis script returned invalid allowed flag for next crawl claim";
                 _logger.LogWarning("Cannot claim next crawl for key {Key}: {Error}", key, error);
+                
                 return Result.Fail(error);
             }
 
@@ -171,6 +175,7 @@ public class RedisCache : ICache
             {
                 var error = "Redis script returned invalid timestamp for next crawl claim";
                 _logger.LogWarning("Cannot claim next crawl for key {Key}: {Error}", key, error);
+                
                 return Result.Fail(error);
             }
 
@@ -187,11 +192,12 @@ public class RedisCache : ICache
         {
             var error = $"Error claiming next crawl for key {key}: {ex.Message}";
             _logger.LogError(ex, "Error claiming next crawl for key {Key}", key);
+            
             return Result.Fail(error);
         }
     }
 
-    public async Task<Result<bool>> RemoveAsync(string key, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> Remove(string key, CancellationToken cancellationToken = default)
     {
         var database = GetDatabase();
         if (database == null)
@@ -222,6 +228,7 @@ public class RedisCache : ICache
         {
             var error = "Redis connection is not available";
             _logger.LogWarning("Cannot ZPOPMIN from key {Key}: {Error}", key, error);
+            
             return Result.Fail(error);
         }
 
@@ -232,6 +239,7 @@ public class RedisCache : ICache
             if (result.Length == 0)
             {
                 _logger.LogDebug("ZPOPMIN from key {Key}: sorted set is empty", key);
+                
                 return Result.Ok((string?)null);
             }
 
@@ -244,17 +252,19 @@ public class RedisCache : ICache
         {
             var error = $"Error performing ZPOPMIN on key {key}: {ex.Message}";
             _logger.LogError(ex, "Error performing ZPOPMIN on key {Key}", key);
+            
             return Result.Fail(error);
         }
     }
 
-    public async Task<Result> EnqueueDueAsync(string url, long dueTimestamp, CancellationToken cancellationToken = default)
+    public async Task<Result> EnqueueUrlForCrawl(string url, long dueTimestamp, CancellationToken cancellationToken = default)
     {
         var database = GetDatabase();
         if (database == null)
         {
             var error = "Redis connection is not available";
             _logger.LogWarning("Cannot enqueue URL to due queue: {Error}", error);
+            
             return Result.Fail(error);
         }
 
@@ -263,23 +273,26 @@ public class RedisCache : ICache
             var queueKey = CacheKey.DueQueue();
             await database.SortedSetAddAsync(queueKey, url, dueTimestamp);
             _logger.LogDebug("Enqueued URL {Url} to due queue with timestamp {Timestamp}", url, dueTimestamp);
+            
             return Result.Ok();
         }
         catch (Exception ex)
         {
             var error = $"Error enqueueing URL {url} to due queue: {ex.Message}";
             _logger.LogError(ex, "Error enqueueing URL to due queue");
+            
             return Result.Fail(error);
         }
     }
 
-    public async Task<Result<IReadOnlyList<string>>> DequeueDueAsync(long currentTimestamp, int maxCount = 100, CancellationToken cancellationToken = default)
+    public async Task<Result<IReadOnlyList<string>>> Dequeue(long currentTimestamp, int maxCount = 100, CancellationToken cancellationToken = default)
     {
         var database = GetDatabase();
         if (database == null)
         {
             var error = "Redis connection is not available";
             _logger.LogWarning("Cannot dequeue from due queue: {Error}", error);
+            
             return Result.Fail(error);
         }
 
@@ -287,8 +300,6 @@ public class RedisCache : ICache
         {
             var queueKey = CacheKey.DueQueue();
             
-            // Lua script to atomically get and remove due items
-            // Returns all items with score <= currentTimestamp, up to maxCount, and removes them
             const string luaScript = @"
                 local key = KEYS[1]
                 local max_score = tonumber(ARGV[1])
@@ -305,11 +316,10 @@ public class RedisCache : ICache
                 return items
             ";
 
-            // Use ScriptEvaluateAsync directly with the script string
             var result = await database.ScriptEvaluateAsync(
-                luaScript, 
-                new RedisKey[] { queueKey }, 
-                new RedisValue[] { currentTimestamp, maxCount });
+                luaScript,
+                [queueKey],
+                [currentTimestamp, maxCount]);
 
             if (result.IsNull)
             {

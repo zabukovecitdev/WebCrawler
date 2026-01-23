@@ -49,8 +49,4 @@ public class CrawlerOptions
     /// </summary>
     public bool UsePerDomainRateLimiting { get; set; } = true;
 
-    /// <summary>
-    /// Time-to-live for URL lock keys in seconds (prevents duplicate fetches across instances)
-    /// </summary>
-    public int UrlLockTtlSeconds { get; set; } = 30; // 30 seconds default, should be longer than typical fetch time
 }
