@@ -1,4 +1,4 @@
-using FluentResults;
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -75,7 +75,7 @@ public class DueQueueWorker : BackgroundService
 
         _logger.LogInformation("Processing {Count} URLs from due queue", urls.Count);
 
-        foreach (var urlString in urls)
+        foreach (var payload in urls)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -84,37 +84,56 @@ public class DueQueueWorker : BackgroundService
 
             try
             {
-                if (!Uri.TryCreate(urlString, UriKind.Absolute, out var uri))
+                ScheduledUrl? scheduledUrl = null;
+
+                try
                 {
-                    _logger.LogWarning("Invalid URL format in due queue: {Url}", urlString);
-                    continue;
+                    scheduledUrl = JsonSerializer.Deserialize<ScheduledUrl>(payload);
+                }
+                catch (JsonException)
+                {
+                    // Fallback for legacy payloads that only contained the URL string.
                 }
 
-                var scheduledUrl = new ScheduledUrl
+                if (scheduledUrl == null || string.IsNullOrWhiteSpace(scheduledUrl.Url))
                 {
-                    Host = uri.Host,
-                    Url = urlString,
-                };
+                    if (!Uri.TryCreate(payload, UriKind.Absolute, out var uri))
+                    {
+                        _logger.LogWarning("Invalid due queue payload: {Payload}", payload);
+                        continue;
+                    }
+
+                    scheduledUrl = new ScheduledUrl
+                    {
+                        Host = uri.Host,
+                        Url = uri.ToString()
+                    };
+                }
+                else if (string.IsNullOrWhiteSpace(scheduledUrl.Host) &&
+                         Uri.TryCreate(scheduledUrl.Url, UriKind.Absolute, out var uri))
+                {
+                    scheduledUrl.Host = uri.Host;
+                }
 
                 var result = await contentPipeline.ProcessContent(scheduledUrl, cancellationToken);
 
                 if (result.IsFailed)
                 {
                     _logger.LogWarning("Failed to process URL {Url} from due queue: {Errors}",
-                        urlString, string.Join("; ", result.Errors.Select(e => e.Message)));
+                        scheduledUrl.Url, string.Join("; ", result.Errors.Select(e => e.Message)));
                 }
                 else if (result.Value.WasDeferred)
                 {
-                    _logger.LogInformation("Deferred URL {Url} again; still not due", urlString);
+                    _logger.LogInformation("Deferred URL {Url} again; still not due", scheduledUrl.Url);
                 }
                 else
                 {
-                    _logger.LogDebug("Successfully processed URL {Url} from due queue", urlString);
+                    _logger.LogDebug("Successfully processed URL {Url} from due queue", scheduledUrl.Url);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing URL {Url} from due queue", urlString);
+                _logger.LogError(ex, "Error processing due queue payload {Payload}", payload);
             }
         }
     }

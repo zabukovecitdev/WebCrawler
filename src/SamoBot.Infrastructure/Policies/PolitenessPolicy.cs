@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FluentResults;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -50,7 +51,8 @@ public class PolitenessPolicy : ICrawlPolicy
         if (!claimResult.Value.Allowed)
         {
             var dueTimestamp = claimResult.Value.NextAllowedTimestamp;
-            var enqueueResult = await _cache.EnqueueUrlForCrawl(url, dueTimestamp, cancellationToken);
+            var payload = JsonSerializer.Serialize(scheduledUrl);
+            var enqueueResult = await _cache.EnqueueUrlForCrawl(payload, dueTimestamp, cancellationToken);
 
             if (enqueueResult.IsFailed)
             {
