@@ -1,6 +1,7 @@
 using System.Data;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using Samobot.Domain.Enums;
 using Samobot.Domain.Models;
 using SamoBot.Infrastructure.Data;
 using SamoBot.Infrastructure.Database;
@@ -42,7 +43,7 @@ public class SchedulerService : ISchedulerService
                 _logger.LogDebug("Found {Count} URLs ready for crawling, updating status to InFlight", urlList.Count);
                 
                 var ids = urlList.Select(u => u.Id).ToList();
-                await _repository.UpdateStatusToInFlight(ids, transaction, cancellationToken);
+                await _repository.UpdateStatus(ids, UrlStatus.InFlight, transaction, cancellationToken);
                 
                 await transaction.CommitAsync(cancellationToken);
                 

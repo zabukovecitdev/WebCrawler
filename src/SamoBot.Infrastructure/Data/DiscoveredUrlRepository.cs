@@ -103,7 +103,9 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
             .Limit(limit).GetAsync<DiscoveredUrl>(transaction, cancellationToken: cancellationToken);
     }
 
-    public async Task UpdateStatusToInFlight(IEnumerable<int> ids, IDbTransaction transaction, CancellationToken cancellationToken = default)
+
+    public async Task UpdateStatus(IEnumerable<int> ids, UrlStatus status, IDbTransaction transaction,
+        CancellationToken cancellationToken = default)
     {
         if (transaction?.Connection == null)
         {
@@ -123,7 +125,7 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
 
         var parameters = new
         {
-            Status = nameof(UrlStatus.InFlight),
+            Status = status.AsString(),
             Ids = idList.ToArray()
         };
 
