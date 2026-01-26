@@ -1,23 +1,42 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+        <OutputType>Exe</OutputType>
         <TargetFramework>net10.0</TargetFramework>
         <LangVersion>latest</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <IsPackable>false</IsPackable>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="coverlet.collector" Version="6.0.4"/>
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.0"/>
-        <PackageReference Include="NUnit" Version="4.3.2"/>
-        <PackageReference Include="NUnit.Analyzers" Version="4.7.0"/>
-        <PackageReference Include="NUnit3TestAdapter" Version="5.0.0"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.1" />
     </ItemGroup>
 
     <ItemGroup>
-        <Using Include="NUnit.Framework"/>
+        <ProjectReference Include="..\SamoBot.Infrastructure\SamoBot.Infrastructure.csproj" />
+        <ProjectReference Include="..\Samobot.Domain\Samobot.Domain.csproj" />
+        <ProjectReference Include="..\SamoBot.Settings\SamoBot.Settings.csproj" />
     </ItemGroup>
+
+    <ItemGroup>
+        <None Update="appsettings.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+    <!-- Copy appsettings.json from Settings project to output directory before build -->
+    <Target Name="CopySharedAppSettings" BeforeTargets="PrepareForBuild">
+        <ItemGroup>
+            <SharedAppSettings Include="$(MSBuildThisFileDirectory)..\SamoBot.Settings\appsettings.json" />
+        </ItemGroup>
+        <Copy SourceFiles="@(SharedAppSettings)" 
+              DestinationFiles="$(OutDir)appsettings.json" 
+              SkipUnchangedFiles="true"
+              Condition="Exists('@(SharedAppSettings)')" />
+    </Target>
 
 </Project>
