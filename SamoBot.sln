@@ -18,6 +18,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Samobot.Crawler", "src\Samo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SamoBot.Settings", "src\SamoBot.Settings\SamoBot.Settings.csproj", "{847A7F70-3231-4576-8818-E3595840CE08}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SamoBot.Parser", "src\SamoBot.Parser\SamoBot.Parser.csproj", "{BDD997E5-5E31-431A-BFFD-AFF2AF64BC4E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -136,6 +138,18 @@ Global
 		{847A7F70-3231-4576-8818-E3595840CE08}.Release|x64.Build.0 = Release|Any CPU
 		{847A7F70-3231-4576-8818-E3595840CE08}.Release|x86.ActiveCfg = Release|Any CPU
 		{847A7F70-3231-4576-8818-E3595840CE08}.Release|x86.Build.0 = Release|Any CPU
+		{BDD997E5-5E31-431A-BFFD-AFF2AF64BC4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BDD997E5-5E31-431A-BFFD-AFF2AF64BC4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BDD997E5-5E31-431A-BFFD-AFF2AF64BC4E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BDD997E5-5E31-431A-BFFD-AFF2AF64BC4E}.Debug|x64.Build.0 = Debug|Any CPU
+		{BDD997E5-5E31-431A-BFFD-AFF2AF64BC4E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BDD997E5-5E31-431A-BFFD-AFF2AF64BC4E}.Debug|x86.Build.0 = Debug|Any CPU
+		{BDD997E5-5E31-431A-BFFD-AFF2AF64BC4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BDD997E5-5E31-431A-BFFD-AFF2AF64BC4E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BDD997E5-5E31-431A-BFFD-AFF2AF64BC4E}.Release|x64.ActiveCfg = Release|Any CPU
+		{BDD997E5-5E31-431A-BFFD-AFF2AF64BC4E}.Release|x64.Build.0 = Release|Any CPU
+		{BDD997E5-5E31-431A-BFFD-AFF2AF64BC4E}.Release|x86.ActiveCfg = Release|Any CPU
+		{BDD997E5-5E31-431A-BFFD-AFF2AF64BC4E}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
