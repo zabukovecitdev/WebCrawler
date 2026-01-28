@@ -1,5 +1,9 @@
+using System.Data;
+using Dapper;
 using Samobot.Domain.Models;
 using SamoBot.Infrastructure.Constants;
+using SamoBot.Infrastructure.Data.Abstractions;
+using SamoBot.Infrastructure.Extensions;
 using SqlKata.Execution;
 
 namespace SamoBot.Infrastructure.Data;
@@ -30,7 +34,8 @@ public class UrlFetchRepository(QueryFactory queryFactory) : IUrlFetchRepository
                 entity.ContentType,
                 entity.ContentLength,
                 entity.ResponseTimeMs,
-                entity.ObjectName
+                entity.ObjectName,
+                ParsedAt = entity.ParsedAt?.ToUniversalTime()
             }, cancellationToken: cancellationToken);
     }
 
@@ -46,7 +51,8 @@ public class UrlFetchRepository(QueryFactory queryFactory) : IUrlFetchRepository
                 entity.ContentType,
                 entity.ContentLength,
                 entity.ResponseTimeMs,
-                entity.ObjectName
+                entity.ObjectName,
+                ParsedAt = entity.ParsedAt?.ToUniversalTime()
             }, cancellationToken: cancellationToken);
 
         return affected > 0;
@@ -57,6 +63,46 @@ public class UrlFetchRepository(QueryFactory queryFactory) : IUrlFetchRepository
         var affected = await queryFactory.Query(TableNames.Database.UrlFetches)
             .Where(nameof(UrlFetch.Id), id)
             .DeleteAsync(cancellationToken: cancellationToken);
+
+        return affected > 0;
+    }
+
+    public async Task<IEnumerable<UrlFetch>> GetUnparsedHtmlFetches(int limit, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
+    {
+        if (transaction?.Connection == null)
+        {
+            throw new InvalidOperationException("Transaction and connection must be provided for FOR UPDATE SKIP LOCKED");
+        }
+
+        var query = queryFactory.Query(TableNames.Database.UrlFetches)
+            .WhereNull(nameof(UrlFetch.ParsedAt))
+            .WhereNotNull(nameof(UrlFetch.ObjectName))
+            .Where(q => q
+                .Where(nameof(UrlFetch.ContentType), "text/html")
+                .OrWhereLike(nameof(UrlFetch.ContentType), "text/html%"))
+            .OrderBy(nameof(UrlFetch.FetchedAt))
+            .Limit(limit)
+            .ForUpdateSkipLocked();
+
+        var sqlResult = queryFactory.Compiler.Compile(query);
+
+        var command = new CommandDefinition(
+            sqlResult.Sql,
+            sqlResult.NamedBindings,
+            transaction,
+            cancellationToken: cancellationToken);
+
+        return await transaction.Connection.QueryAsync<UrlFetch>(command);
+    }
+    
+    public async Task<bool> MarkAsParsed(int id, CancellationToken cancellationToken = default)
+    {
+        var affected = await queryFactory.Query(TableNames.Database.UrlFetches)
+            .Where(nameof(UrlFetch.Id), id)
+            .UpdateAsync(new
+            {
+                ParsedAt = DateTimeOffset.UtcNow
+            }, cancellationToken: cancellationToken);
 
         return affected > 0;
     }

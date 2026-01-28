@@ -2,7 +2,7 @@ using System.Data;
 using Samobot.Domain.Enums;
 using Samobot.Domain.Models;
 
-namespace SamoBot.Infrastructure.Data;
+namespace SamoBot.Infrastructure.Data.Abstractions;
 
 public interface IDiscoveredUrlRepository : IRepository<DiscoveredUrl>
 {

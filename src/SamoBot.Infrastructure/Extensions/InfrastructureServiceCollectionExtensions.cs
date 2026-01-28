@@ -8,6 +8,7 @@ using Polly;
 using SamoBot.Infrastructure.Abstractions;
 using SamoBot.Infrastructure.Cache;
 using SamoBot.Infrastructure.Data;
+using SamoBot.Infrastructure.Data.Abstractions;
 using SamoBot.Infrastructure.Database;
 using SamoBot.Infrastructure.Options;
 using SamoBot.Infrastructure.Policies;
@@ -102,6 +103,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IObjectNameGenerator, ObjectNameGenerator>();
         services.AddScoped<IFetchRecordPersistenceService, FetchRecordPersistenceService>();
         services.AddScoped<IContentProcessingPipeline, ContentProcessingPipeline>();
+        services.AddScoped<Storage.Abstractions.IHtmlParser, Storage.Services.HtmlParser>();
 
         services.AddScoped<IMinioClient>(sp =>
         {

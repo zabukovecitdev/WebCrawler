@@ -1,4 +1,4 @@
-namespace SamoBot.Infrastructure.Data;
+namespace SamoBot.Infrastructure.Data.Abstractions;
 
 public interface IRepository<T> where T : class
 {

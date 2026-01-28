@@ -3,6 +3,7 @@ using Dapper;
 using Samobot.Domain.Enums;
 using Samobot.Domain.Models;
 using SamoBot.Infrastructure.Constants;
+using SamoBot.Infrastructure.Data.Abstractions;
 using SamoBot.Infrastructure.Extensions;
 using SqlKata.Execution;
 

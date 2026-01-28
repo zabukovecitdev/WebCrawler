@@ -10,5 +10,6 @@ public class UrlFetch
     public long? ContentLength { get; set; }
     public long? ResponseTimeMs { get; set; }
     public string? ObjectName { get; set; }
+    public DateTimeOffset? ParsedAt { get; set; }
     public DiscoveredUrl? DiscoveredUrl { get; set; }
 }

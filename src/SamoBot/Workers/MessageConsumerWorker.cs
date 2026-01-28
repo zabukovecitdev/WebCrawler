@@ -5,6 +5,7 @@ using Samobot.Domain.Models;
 using SamoBot.Extensions;
 using SamoBot.Infrastructure.Abstractions;
 using SamoBot.Infrastructure.Data;
+using SamoBot.Infrastructure.Data.Abstractions;
 using SamoBot.Utilities;
 
 namespace SamoBot.Workers;
