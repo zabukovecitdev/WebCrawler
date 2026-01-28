@@ -60,6 +60,36 @@ public class MinioHtmlUploader : IMinioHtmlUploader
         }
     }
 
+    public async Task<MemoryStream> GetObject(
+        string bucket,
+        string objectName,
+        CancellationToken cancellationToken = default)
+    {
+        var memoryStream = new MemoryStream();
+
+        try
+        {
+            var getObjectArgs = new GetObjectArgs()
+                .WithBucket(bucket)
+                .WithObject(objectName)
+                .WithCallbackStream(stream =>
+                {
+                    stream.CopyTo(memoryStream);
+                });
+
+            await _minioClient.GetObjectAsync(getObjectArgs, cancellationToken);
+            memoryStream.Position = 0;
+
+            return memoryStream;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to download object {Bucket}/{ObjectName}", bucket, objectName);
+            await memoryStream.DisposeAsync();
+            throw;
+        }
+    }
+
     private static string EnsureHtmlExtension(string objectName)
     {
         if (string.IsNullOrWhiteSpace(objectName))

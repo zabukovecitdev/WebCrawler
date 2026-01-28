@@ -17,7 +17,7 @@ builder.Configuration
     .AddEnvironmentVariables();
 
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddSingleton<IMessageConsumer, RabbitMQMessageConsumer>();
+builder.Services.AddSingleton<IMessageConsumer, UrlDiscoveryConsumer>();
 builder.Services.AddHostedService<MessageConsumerWorker>();
 
 builder.Logging.ClearProviders();

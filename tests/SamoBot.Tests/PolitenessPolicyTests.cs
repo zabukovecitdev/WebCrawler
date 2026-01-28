@@ -219,12 +219,12 @@ public class PolitenessPolicyTests
 
         public List<(string Payload, long DueTimestamp)> Enqueued { get; } = new();
 
-        public Task<Result<string?>> GetAsync(string key, CancellationToken cancellationToken = default)
+        public Task<Result<string?>> Get(string key, CancellationToken cancellationToken = default)
         {
             throw new NotSupportedException();
         }
 
-        public Task<Result> SetAsync(string key, string value, TimeSpan? ttl = null,
+        public Task<Result> Set(string key, string value, TimeSpan? ttl = null,
             CancellationToken cancellationToken = default)
         {
             throw new NotSupportedException();
@@ -240,12 +240,12 @@ public class PolitenessPolicyTests
             return Task.FromResult(ClaimResult);
         }
 
-        public Task<Result<bool>> Remove(string key, CancellationToken cancellationToken = default)
+        public Task<Result<bool>> KeyDelete(string key, CancellationToken cancellationToken = default)
         {
             throw new NotSupportedException();
         }
 
-        public Task<Result<string?>> ZPopMinAsync(string key, CancellationToken cancellationToken = default)
+        public Task<Result<string?>> ZPopMin(string key, CancellationToken cancellationToken = default)
         {
             throw new NotSupportedException();
         }

@@ -1,12 +1,8 @@
-namespace SamoBot.Infrastructure.Storage.Abstractions;
+using Samobot.Domain.Models;
 
-public class ParsedLink
-{
-    public string Url { get; set; } = string.Empty;
-    public string LinkText { get; set; } = string.Empty;
-}
+namespace SamoBot.Infrastructure.Storage.Abstractions;
 
 public interface IHtmlParser
 {
-    Task<List<ParsedLink>> ParseAsync(MemoryStream htmlStream, CancellationToken cancellationToken = default);
+    Task<ParsedDocument> Parse(MemoryStream htmlStream, CancellationToken cancellationToken = default);
 }

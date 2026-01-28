@@ -36,7 +36,7 @@ public class RedisCache : ICache
         return _connectionMultiplexer.GetDatabase(_options.Database);
     }
 
-    public async Task<Result<string?>> GetAsync(string key, CancellationToken cancellationToken = default)
+    public async Task<Result<string?>> Get(string key, CancellationToken cancellationToken = default)
     {
         var database = GetDatabase();
         if (database == null)
@@ -71,7 +71,7 @@ public class RedisCache : ICache
         }
     }
 
-    public async Task<Result> SetAsync(string key, string value, TimeSpan? ttl = null, CancellationToken cancellationToken = default)
+    public async Task<Result> Set(string key, string value, TimeSpan? ttl = null, CancellationToken cancellationToken = default)
     {
         var database = GetDatabase();
         if (database == null)
@@ -197,7 +197,7 @@ public class RedisCache : ICache
         }
     }
 
-    public async Task<Result<bool>> Remove(string key, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> KeyDelete(string key, CancellationToken cancellationToken = default)
     {
         var database = GetDatabase();
         if (database == null)
@@ -221,7 +221,7 @@ public class RedisCache : ICache
         }
     }
 
-    public async Task<Result<string?>> ZPopMinAsync(string key, CancellationToken cancellationToken = default)
+    public async Task<Result<string?>> ZPopMin(string key, CancellationToken cancellationToken = default)
     {
         var database = GetDatabase();
         if (database == null)

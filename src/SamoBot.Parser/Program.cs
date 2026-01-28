@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SamoBot.Infrastructure.Extensions;
+using SamoBot.Parser.Services;
 using SamoBot.Parser.Workers;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -14,6 +15,7 @@ builder.Configuration
     .AddEnvironmentVariables();
 
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddScoped<IParserService, ParserService>();
 builder.Services.AddHostedService<ParserWorker>();
 
 builder.Logging.ClearProviders();

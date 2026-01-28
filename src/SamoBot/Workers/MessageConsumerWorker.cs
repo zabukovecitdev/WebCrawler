@@ -62,7 +62,7 @@ public class MessageConsumerWorker : BackgroundService
                 args.CreatedAt,
                 args.Message);
 
-            await ProcessMessageAsync(args.Message, CancellationToken.None);
+            await ProcessMessage(args.Message, CancellationToken.None);
         }
         catch (Exception ex)
         {
@@ -70,7 +70,7 @@ public class MessageConsumerWorker : BackgroundService
         }
     }
 
-    private async Task ProcessMessageAsync(string dirtyUrl, CancellationToken cancellationToken = default)
+    private async Task ProcessMessage(string dirtyUrl, CancellationToken cancellationToken = default)
     {
         if (!UrlNormalizer.TryClean(dirtyUrl, out var normalizedUrl) || normalizedUrl == null)
         {
@@ -98,7 +98,6 @@ public class MessageConsumerWorker : BackgroundService
             Url = dirtyUrl,
             Host = normalizedUrl.Host,
             NormalizedUrl = normalizedUrl.AbsoluteUri,
-            // Ensure UTC offset (Npgsql requires offset 0 for timestamp with time zone)
             DiscoveredAt = _timeProvider.GetUtcNow().ToUniversalTime(),
             Priority = normalizedUrl.GetUrlSegmentsLength() + normalizedUrl.GetQueryParameterCount()
         };

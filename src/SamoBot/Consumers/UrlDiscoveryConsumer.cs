@@ -9,9 +9,9 @@ using SamoBot.Infrastructure.RabbitMQ;
 
 namespace SamoBot.Consumers;
 
-public class RabbitMQMessageConsumer : IMessageConsumer
+public class UrlDiscoveryConsumer : IMessageConsumer
 {
-    private readonly ILogger<RabbitMQMessageConsumer> _logger;
+    private readonly ILogger<UrlDiscoveryConsumer> _logger;
     private readonly RabbitMQConnectionOptions _connectionOptions;
     private readonly DiscoveredUrlQueueOptions _queueOptions;
     private IConnection? _connection;
@@ -20,8 +20,8 @@ public class RabbitMQMessageConsumer : IMessageConsumer
 
     public event EventHandler<MessageReceivedEventArgs>? MessageReceived;
 
-    public RabbitMQMessageConsumer(
-        ILogger<RabbitMQMessageConsumer> logger,
+    public UrlDiscoveryConsumer(
+        ILogger<UrlDiscoveryConsumer> logger,
         IOptions<RabbitMQConnectionOptions> connectionOptions,
         IOptions<DiscoveredUrlQueueOptions> queueOptions)
     {
