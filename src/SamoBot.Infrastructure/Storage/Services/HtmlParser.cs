@@ -238,7 +238,8 @@ public partial class HtmlParser : IHtmlParser
             NoIndex = content.Contains("noindex", StringComparison.OrdinalIgnoreCase),
             NoFollow = content.Contains("nofollow", StringComparison.OrdinalIgnoreCase),
             NoArchive = content.Contains("noarchive", StringComparison.OrdinalIgnoreCase),
-            NoSnippet = content.Contains("nosnippet", StringComparison.OrdinalIgnoreCase)
+            NoSnippet = content.Contains("nosnippet", StringComparison.OrdinalIgnoreCase),
+            None = content.Contains("none", StringComparison.OrdinalIgnoreCase)
         };
     }
 

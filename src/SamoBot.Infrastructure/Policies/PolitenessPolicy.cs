@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using Samobot.Domain.Models;
 using SamoBot.Infrastructure.Abstractions;
 using SamoBot.Infrastructure.Options;
+using SamoBot.Infrastructure.Services;
 using SamoBot.Infrastructure.Utilities;
 
 namespace SamoBot.Infrastructure.Policies;
@@ -14,14 +15,20 @@ public class PolitenessPolicy : ICrawlPolicy
     private readonly ICache _cache;
     private readonly TimeProvider _timeProvider;
     private readonly CrawlerOptions _crawlerOptions;
+    private readonly IRobotsTxtService _robotsTxtService;
     private readonly ILogger<PolitenessPolicy> _logger;
 
-    public PolitenessPolicy(ICache cache, TimeProvider timeProvider, IOptions<CrawlerOptions> crawlerOptions,
+    public PolitenessPolicy(
+        ICache cache,
+        TimeProvider timeProvider,
+        IOptions<CrawlerOptions> crawlerOptions,
+        IRobotsTxtService robotsTxtService,
         ILogger<PolitenessPolicy> logger)
     {
         _cache = cache;
         _timeProvider = timeProvider;
         _crawlerOptions = crawlerOptions.Value;
+        _robotsTxtService = robotsTxtService;
         _logger = logger;
     }
 
@@ -33,7 +40,7 @@ public class PolitenessPolicy : ICrawlPolicy
         var url = scheduledUrl.Url;
         var host = scheduledUrl.Host;
         var now = _timeProvider.GetUtcNow().ToUnixTimeMilliseconds();
-        var delayMs = GetPerHostDelayMs();
+        var delayMs = await GetPerHostDelay(host, cancellationToken);
 
         var claimResult = await _cache.TryClaimNextCrawl(
             CacheKey.UrlNextCrawl(host),
@@ -75,9 +82,28 @@ public class PolitenessPolicy : ICrawlPolicy
         return await action(cancellationToken);
     }
 
-    private long GetPerHostDelayMs()
+    private async Task<long> GetPerHostDelay(string host, CancellationToken cancellationToken)
     {
         var delayMs = _crawlerOptions.DefaultDelayMs;
+
+        // Check robots.txt for crawl-delay directive
+        try
+        {
+            var crawlDelayResult = await _robotsTxtService.GetCrawlDelayMs(host, cancellationToken);
+            if (crawlDelayResult.IsSuccess && crawlDelayResult.Value.HasValue)
+            {
+                var robotsCrawlDelay = crawlDelayResult.Value.Value;
+                _logger.LogDebug("Using robots.txt crawl-delay of {CrawlDelayMs}ms for host {Host}",
+                    robotsCrawlDelay, host);
+                delayMs = Math.Max(delayMs, robotsCrawlDelay);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get crawl-delay from robots.txt for host {Host}, using default", host);
+        }
+
+        // Apply min/max limits
         if (delayMs < _crawlerOptions.MinDelayMs)
         {
             delayMs = _crawlerOptions.MinDelayMs;

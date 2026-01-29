@@ -11,10 +11,13 @@ using SamoBot.Infrastructure.Data;
 using SamoBot.Infrastructure.Data.Abstractions;
 using SamoBot.Infrastructure.Database;
 using SamoBot.Infrastructure.Options;
+using SamoBot.Infrastructure.Parsers;
 using SamoBot.Infrastructure.Policies;
 using SamoBot.Infrastructure.Producers;
+using SamoBot.Infrastructure.Services;
 using SamoBot.Infrastructure.Storage.Abstractions;
 using SamoBot.Infrastructure.Storage.Services;
+using SamoBot.Infrastructure.Validators;
 using SqlKata.Compilers;
 using SqlKata.Execution;
 using StackExchange.Redis;
@@ -92,11 +95,29 @@ public static class InfrastructureServiceCollectionExtensions
         });
 
         services.AddScoped<ICache, RedisCache>();
-        services.AddScoped<ICrawlPolicy, PolitenessPolicy>();
+
+        // Robots.txt services
+        services.AddSingleton<IRobotsTxtParser, Parsers.RobotsTxtParser>();
+        services.AddScoped<IRobotsTxtRepository, RobotsTxtRepository>();
+        services.AddScoped<IRobotsTxtService, RobotsTxtService>();
+
+        // Validators
+        services.AddSingleton<IMetaRobotsValidator, MetaRobotsValidator>();
+
+        // Policies - register individual policies and policy chain
+        services.AddScoped<RobotsTxtPolicy>();
+        services.AddScoped<PolitenessPolicy>();
+        services.AddScoped<ICrawlPolicy>(sp => new PolicyChain(new ICrawlPolicy[]
+        {
+            sp.GetRequiredService<RobotsTxtPolicy>(),
+            sp.GetRequiredService<PolitenessPolicy>()
+        }));
 
         services.AddSingleton<IUrlScheduler, UrlScheduler>();
+        services.AddSingleton<IDiscoveredUrlPublisher, DiscoveredUrlPublisher>();
         services.AddScoped<IDiscoveredUrlRepository, DiscoveredUrlRepository>();
         services.AddScoped<IUrlFetchRepository, UrlFetchRepository>();
+        services.AddScoped<IParsedDocumentRepository, ParsedDocumentRepository>();
         services.AddScoped<IUrlFetchService, UrlFetchService>();
         services.AddSingleton<IHtmlContentValidator, HtmlContentValidator>();
         services.AddScoped<IMinioHtmlUploader, MinioHtmlUploader>();

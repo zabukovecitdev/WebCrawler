@@ -7,6 +7,7 @@ using Samobot.Domain.Models;
 using SamoBot.Infrastructure.Abstractions;
 using SamoBot.Infrastructure.Options;
 using SamoBot.Infrastructure.Policies;
+using SamoBot.Infrastructure.Services;
 
 namespace SamoBot.Tests;
 
@@ -193,7 +194,8 @@ public class PolitenessPolicyTests
     {
         var timeProvider = new FixedTimeProvider(DateTimeOffset.UnixEpoch);
         var crawlOptions = Options.Create(options ?? new CrawlerOptions());
-        return new PolitenessPolicy(cache, timeProvider, crawlOptions, NullLogger<PolitenessPolicy>.Instance);
+        var fakeRobotsTxtService = new FakeRobotsTxtService();
+        return new PolitenessPolicy(cache, timeProvider, crawlOptions, fakeRobotsTxtService, NullLogger<PolitenessPolicy>.Instance);
     }
 
     private sealed class FixedTimeProvider : TimeProvider
@@ -262,6 +264,24 @@ public class PolitenessPolicyTests
 
         public Task<Result<IReadOnlyList<string>>> Dequeue(long currentTimestamp, int maxCount = 100,
             CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException();
+        }
+    }
+
+    private sealed class FakeRobotsTxtService : IRobotsTxtService
+    {
+        public Task<Result<bool>> IsUrlAllowed(string url, string userAgent, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(Result.Ok(true));
+        }
+
+        public Task<Result<int?>> GetCrawlDelayMs(string host, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(Result.Ok<int?>(null));
+        }
+
+        public Task<Result<Samobot.Domain.Models.RobotsTxt>> GetRobotsTxt(string host, CancellationToken cancellationToken = default)
         {
             throw new NotSupportedException();
         }

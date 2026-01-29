@@ -58,4 +58,5 @@ public class RobotsDirectives
     public bool NoFollow { get; set; }
     public bool NoArchive { get; set; }
     public bool NoSnippet { get; set; }
+    public bool None { get; set; }
 }

@@ -17,6 +17,7 @@ builder.Configuration
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHostedService<CrawlerWorker>();
 builder.Services.AddHostedService<DueQueueWorker>();
+builder.Services.AddHostedService<RobotsTxtRefreshWorker>();
 
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();

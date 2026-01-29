@@ -6,4 +6,5 @@ public class UrlContentMetadata
     public long? ContentLength { get; set; }
     public int StatusCode { get; set; } = -1;
     public bool WasDeferred { get; set; }
+    public bool WasBlocked { get; set; }
 }
