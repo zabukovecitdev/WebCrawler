@@ -7,17 +7,11 @@ using SamoBot.Infrastructure.Storage.Abstractions;
 
 namespace SamoBot.Infrastructure.Storage.Services;
 
-public partial class HtmlParser : IHtmlParser
+public partial class HtmlParser(ILogger<HtmlParser> logger) : IHtmlParser
 {
-    private readonly ILogger<HtmlParser> _logger;
-    private static readonly string[] UnwantedTags = { "script", "style", "noscript", "svg", "path" };
+    private static readonly string[] UnwantedTags = ["script", "style", "noscript", "svg", "path"];
 
-    public HtmlParser(ILogger<HtmlParser> logger)
-    {
-        _logger = logger;
-    }
-
-    public async Task<ParsedDocument> Parse(MemoryStream htmlStream, CancellationToken cancellationToken = default)
+    public ParsedDocument Parse(MemoryStream htmlStream)
     {
         try
         {
@@ -44,7 +38,7 @@ public partial class HtmlParser : IHtmlParser
                 JsonLdData = ExtractJsonLd(htmlDocument)
             };
 
-            _logger.LogDebug(
+            logger.LogDebug(
                 "Parsed HTML - Title: {Title}, Links: {LinkCount}, Images: {ImageCount}, Headings: {HeadingCount}",
                 document.Title, 
                 document.Links.Count, 
@@ -56,7 +50,7 @@ public partial class HtmlParser : IHtmlParser
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error parsing HTML stream");
+            logger.LogError(ex, "Error parsing HTML stream");
             throw;
         }
     }
@@ -108,7 +102,7 @@ public partial class HtmlParser : IHtmlParser
         return node?.GetAttributeValue("href", string.Empty) ?? string.Empty;
     }
 
-    private List<ParsedHeading> ExtractHeadings(HtmlDocument htmlDoc)
+    private static List<ParsedHeading> ExtractHeadings(HtmlDocument htmlDoc)
     {
         var headings = new List<ParsedHeading>();
 
@@ -117,18 +111,11 @@ public partial class HtmlParser : IHtmlParser
             var nodes = htmlDoc.DocumentNode.SelectNodes($"//h{level}");
             if (nodes == null) continue;
 
-            foreach (var node in nodes)
-            {
-                var text = System.Net.WebUtility.HtmlDecode(node.InnerText.Trim());
-                if (!string.IsNullOrWhiteSpace(text))
-                {
-                    headings.Add(new ParsedHeading
-                    {
-                        Level = level,
-                        Text = WhitespaceRegex().Replace(text, " ")
-                    });
-                }
-            }
+            headings.AddRange(from node in nodes
+                select System.Net.WebUtility.HtmlDecode(node.InnerText.Trim())
+                into text
+                where !string.IsNullOrWhiteSpace(text)
+                select new ParsedHeading { Level = level, Text = WhitespaceRegex().Replace(text, " ") });
         }
 
         return headings;
@@ -136,17 +123,14 @@ public partial class HtmlParser : IHtmlParser
 
     private string ExtractBodyText(HtmlDocument htmlDoc)
     {
-        // Clone to avoid modifying original
         var docCopy = new HtmlDocument();
         docCopy.LoadHtml(htmlDoc.DocumentNode.OuterHtml);
 
-        // Remove unwanted elements
         docCopy.DocumentNode.Descendants()
             .Where(n => UnwantedTags.Contains(n.Name))
             .ToList()
             .ForEach(n => n.Remove());
 
-        // Remove comments
         docCopy.DocumentNode.Descendants()
             .Where(n => n.NodeType == HtmlNodeType.Comment)
             .ToList()
@@ -155,15 +139,10 @@ public partial class HtmlParser : IHtmlParser
         var body = docCopy.DocumentNode.SelectSingleNode("//body");
         if (body == null) return string.Empty;
 
-        string text = body.InnerText;
+        var text = body.InnerText;
         
-        // Decode HTML entities
         text = System.Net.WebUtility.HtmlDecode(text);
-        
-        // Normalize whitespace
         text = WhitespaceRegex().Replace(text, " ");
-        
-        // Collapse multiple newlines
         text = TextCleaner.CollapseEmptyLines(text);
         
         return text.Trim();
@@ -227,7 +206,7 @@ public partial class HtmlParser : IHtmlParser
         return images;
     }
 
-    private RobotsDirectives ExtractRobotsDirectives(HtmlDocument htmlDoc)
+    private static RobotsDirectives ExtractRobotsDirectives(HtmlDocument htmlDoc)
     {
         var node = htmlDoc.DocumentNode.SelectSingleNode("//meta[@name='robots']");
         var content = node?.GetAttributeValue("content", string.Empty) ?? string.Empty;
@@ -264,7 +243,7 @@ public partial class HtmlParser : IHtmlParser
         return ogData;
     }
 
-    private Dictionary<string, string> ExtractTwitterCardData(HtmlDocument htmlDoc)
+    private static Dictionary<string, string> ExtractTwitterCardData(HtmlDocument htmlDoc)
     {
         var twitterData = new Dictionary<string, string>();
         var twitterNodes = htmlDoc.DocumentNode.SelectNodes("//meta[starts-with(@name, 'twitter:')]");
@@ -285,7 +264,7 @@ public partial class HtmlParser : IHtmlParser
         return twitterData;
     }
 
-    private List<string> ExtractJsonLd(HtmlDocument htmlDoc)
+    private static List<string> ExtractJsonLd(HtmlDocument htmlDoc)
     {
         var jsonLdScripts = new List<string>();
         var scriptNodes = htmlDoc.DocumentNode.SelectNodes("//script[@type='application/ld+json']");

@@ -86,7 +86,6 @@ public class PolitenessPolicy : ICrawlPolicy
     {
         var delayMs = _crawlerOptions.DefaultDelayMs;
 
-        // Check robots.txt for crawl-delay directive
         try
         {
             var crawlDelayResult = await _robotsTxtService.GetCrawlDelayMs(host, cancellationToken);

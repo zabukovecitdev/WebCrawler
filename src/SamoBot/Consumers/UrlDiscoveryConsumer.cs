@@ -51,7 +51,7 @@ public class UrlDiscoveryConsumer : IMessageConsumer
             _queueOptions.ExchangeName, _queueOptions.ExchangeType, _queueOptions.QueueName, _queueOptions.RoutingKey);
 
         _consumer = new EventingBasicConsumer(_channel);
-        _consumer.Received += (model, args) =>
+        _consumer.Received += (_, args) =>
         {
             var body = args.Body.ToArray();
             var message = Encoding.UTF8.GetString(body);

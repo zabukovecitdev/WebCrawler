@@ -37,11 +37,13 @@ public class RobotsTxtRepository(QueryFactory queryFactory) : IRobotsTxtReposito
             .Where("Host", robotsTxt.Host)
             .FirstOrDefaultAsync<dynamic>(cancellationToken: cancellationToken);
 
+        var parsedRulesJson = JsonSerializer.Serialize(robotsTxt.Rules, JsonOptions);
+        using var parsedRulesDoc = JsonDocument.Parse(parsedRulesJson);
         var data = new
         {
             Host = robotsTxt.Host,
             Content = robotsTxt.Content,
-            ParsedRules = JsonSerializer.Serialize(robotsTxt.Rules, JsonOptions),
+            ParsedRules = parsedRulesDoc.RootElement,
             FetchedAt = robotsTxt.FetchedAt,
             ExpiresAt = robotsTxt.ExpiresAt,
             CrawlDelayMs = robotsTxt.CrawlDelayMs,

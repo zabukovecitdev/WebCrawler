@@ -110,6 +110,7 @@ public class MessageConsumerWorker : BackgroundService
     public override void Dispose()
     {
         _messageConsumer.Dispose();
+        
         base.Dispose();
     }
 }

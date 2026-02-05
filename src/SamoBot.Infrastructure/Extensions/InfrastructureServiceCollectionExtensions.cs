@@ -1,4 +1,6 @@
 using System.Data;
+using System.Text.Json;
+using Dapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -28,6 +30,8 @@ public static class InfrastructureServiceCollectionExtensions
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        // So that JsonElement is sent as PostgreSQL JSONB when used as a parameter (e.g. RobotsTxtRepository.SaveAsync).
+        SqlMapper.AddTypeHandler<JsonElement>(new DapperJsonElementTypeHandler());
         services.Configure<MessageBrokerOptions>(
             configuration.GetSection(MessageBrokerOptions.SectionName));
         services.Configure<RabbitMQConnectionOptions>(

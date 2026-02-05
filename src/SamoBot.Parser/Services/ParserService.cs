@@ -140,21 +140,21 @@ public class ParserService : IParserService
 
             memoryStream = await _htmlUploader.GetObject(_minioOptions.BucketName, fetch.ObjectName, cancellationToken);
 
-            var parsedDocument = await htmlParser.Parse(memoryStream, cancellationToken);
+            var parsedDocument = htmlParser.Parse(memoryStream);
 
             _logger.LogInformation("Parsed fetch {FetchId} from {ObjectName}: found {LinkCount} links, {ImageCount} images, {HeadingCount} headings",
                 fetch.Id, fetch.ObjectName, parsedDocument.Links.Count, parsedDocument.Images.Count, parsedDocument.Headings.Count);
 
-            // Check meta robots directives before extracting and publishing links
+
             var shouldFollowLinks = _metaRobotsValidator.ShouldFollowLinks(parsedDocument.RobotsDirectives);
 
             if (shouldFollowLinks)
             {
-                // Extract and publish discovered URLs from links
-                var discoveredUrls = ExtractAbsoluteUrls(parsedDocument.Links, sourceUri);
-                if (discoveredUrls.Any())
+                var discoveredUrls = ExtractAbsoluteUrls(parsedDocument.Links, sourceUri).ToList();
+                if (discoveredUrls.Count != 0)
                 {
                     await _discoveredUrlPublisher.PublishUrlsAsync(discoveredUrls, cancellationToken);
+                    
                     _logger.LogInformation("Published {Count} discovered URLs from fetch {FetchId}", discoveredUrls.Count(), fetch.Id);
                 }
             }
@@ -163,10 +163,8 @@ public class ParserService : IParserService
                 _logger.LogInformation("Skipping link extraction for fetch {FetchId} due to nofollow directive", fetch.Id);
             }
 
-            // Save parsed document to database (without links)
             await parsedDocumentRepository.SaveParsedDocument(fetch.Id, parsedDocument, cancellationToken);
 
-            // Mark fetch as parsed
             await urlFetchRepository.MarkAsParsed(fetch.Id, cancellationToken);
             
             _logger.LogDebug("Saved parsed document and marked fetch {FetchId} as parsed", fetch.Id);
@@ -191,7 +189,7 @@ public class ParserService : IParserService
         }
     }
 
-    private static IEnumerable<string> ExtractAbsoluteUrls(IEnumerable<ParsedLink> links, Uri sourceUri)
+    private static HashSet<string> ExtractAbsoluteUrls(IEnumerable<ParsedLink> links, Uri sourceUri)
     {
         var absoluteUrls = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -202,7 +200,6 @@ public class ParserService : IParserService
                 continue;
             }
 
-            // Skip javascript:, mailto:, tel:, etc.
             if (link.Url.Contains(':', StringComparison.OrdinalIgnoreCase) && 
                 !link.Url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
                 !link.Url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
@@ -212,18 +209,8 @@ public class ParserService : IParserService
 
             try
             {
-                Uri? absoluteUri;
-                if (Uri.TryCreate(link.Url, UriKind.Absolute, out absoluteUri))
+                if (Uri.TryCreate(link.Url, UriKind.Absolute, out var absoluteUri) || Uri.TryCreate(sourceUri, link.Url, out absoluteUri))
                 {
-                    // Already absolute - check if it's a valid HTTP(S) URL
-                    if (absoluteUri.Scheme == Uri.UriSchemeHttp || absoluteUri.Scheme == Uri.UriSchemeHttps)
-                    {
-                        absoluteUrls.Add(absoluteUri.AbsoluteUri);
-                    }
-                }
-                else if (Uri.TryCreate(sourceUri, link.Url, out absoluteUri))
-                {
-                    // Relative URL resolved to absolute - check if it's a valid HTTP(S) URL
                     if (absoluteUri.Scheme == Uri.UriSchemeHttp || absoluteUri.Scheme == Uri.UriSchemeHttps)
                     {
                         absoluteUrls.Add(absoluteUri.AbsoluteUri);

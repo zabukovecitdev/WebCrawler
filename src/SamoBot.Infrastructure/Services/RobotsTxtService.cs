@@ -270,7 +270,7 @@ public class RobotsTxtService : IRobotsTxtService
         {
             Host = host,
             Content = "# No robots.txt or error fetching",
-            Rules = new List<RobotsTxtRule>(),
+            Rules = [],
             FetchedAt = fetchedAt,
             ExpiresAt = fetchedAt.Add(ttl),
             IsFetchError = false
