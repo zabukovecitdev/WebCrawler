@@ -15,4 +15,8 @@ public class DiscoveredUrl
     public DateTimeOffset DiscoveredAt { get; set; }
     public int Priority { get; set; }
     public int? LastFetchId { get; set; }
+    /// <summary>
+    /// Set when status changes to InFlight; used to detect orphaned URLs that never returned to Idle.
+    /// </summary>
+    public DateTimeOffset? StatusUpdatedAt { get; set; }
 }

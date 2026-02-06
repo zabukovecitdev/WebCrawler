@@ -27,6 +27,7 @@ builder.Services.AddHostedService<DueQueueWorker>();
 builder.Services.AddHostedService<RobotsTxtRefreshWorker>();
 builder.Services.AddHostedService<SchedulerWorker>();
 builder.Services.AddHostedService<ParserWorker>();
+builder.Services.AddHostedService<OrphanedInFlightWorker>();
 
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();

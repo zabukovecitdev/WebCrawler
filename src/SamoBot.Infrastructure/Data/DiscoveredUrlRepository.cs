@@ -56,7 +56,8 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
                 entity.FailCount,
                 DiscoveredAt = entity.DiscoveredAt.ToUniversalTime(),
                 entity.Priority,
-                entity.LastFetchId
+                entity.LastFetchId,
+                StatusUpdatedAt = entity.StatusUpdatedAt?.ToUniversalTime()
             }, cancellationToken: cancellationToken);
 
         return affected > 0;
@@ -119,20 +120,62 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
             return;
         }
 
-        var sql = $@"
+        DateTimeOffset? statusUpdatedAt = status == UrlStatus.InFlight
+            ? timeProvider.GetUtcNow().ToUniversalTime()
+            : null;
+
+        const string sql = $@"
             UPDATE ""{TableNames.Database.DiscoveredUrls}""
-            SET ""Status"" = @Status
+            SET ""Status"" = @Status, ""StatusUpdatedAt"" = @StatusUpdatedAt
             WHERE ""Id"" = ANY(@Ids)";
 
         var parameters = new
         {
             Status = status.AsString(),
+            StatusUpdatedAt = statusUpdatedAt,
             Ids = idList.ToArray()
         };
 
         var command = new CommandDefinition(sql, parameters, transaction, cancellationToken: cancellationToken);
-        
+
         await transaction.Connection.ExecuteAsync(command);
+    }
+
+    public async Task<IEnumerable<int>> GetStuckInFlightIds(TimeSpan olderThan, int limit, CancellationToken cancellationToken = default)
+    {
+        var cutoff = timeProvider.GetUtcNow().Subtract(olderThan);
+        var rows = await queryFactory.Query(TableNames.Database.DiscoveredUrls)
+            .Select(nameof(DiscoveredUrl.Id))
+            .Where(nameof(DiscoveredUrl.Status), nameof(UrlStatus.InFlight))
+            .Where(q => q
+                .WhereNull(nameof(DiscoveredUrl.StatusUpdatedAt))
+                .OrWhere(nameof(DiscoveredUrl.StatusUpdatedAt), "<", cutoff.ToUniversalTime()))
+            .Limit(limit)
+            .GetAsync<DiscoveredUrl>(cancellationToken: cancellationToken);
+        return rows.Select(r => r.Id);
+    }
+
+    public async Task<int> ResetOrphanedInFlightToIdle(IEnumerable<int> ids, DateTimeOffset nextCrawlAt, CancellationToken cancellationToken = default)
+    {
+        var idList = ids.ToList();
+        if (idList.Count == 0)
+        {
+            return 0;
+        }
+
+        var updateFields = new Dictionary<string, object?>
+        {
+            { nameof(DiscoveredUrl.Status), nameof(UrlStatus.Idle) },
+            { nameof(DiscoveredUrl.NextCrawlAt), nextCrawlAt.ToUniversalTime() },
+            { nameof(DiscoveredUrl.StatusUpdatedAt), null }
+        };
+
+        var query = queryFactory.Query(TableNames.Database.DiscoveredUrls)
+            .WhereIn(nameof(DiscoveredUrl.Id), idList)
+            .Where(nameof(DiscoveredUrl.Status), nameof(UrlStatus.InFlight));
+
+        var affected = await query.UpdateAsync(updateFields, cancellationToken: cancellationToken);
+        return affected;
     }
 
     public async Task<bool> UpdateAfterFetch(int discoveredUrlId, int? fetchId, CancellationToken cancellationToken = default)

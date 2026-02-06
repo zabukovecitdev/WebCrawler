@@ -12,4 +12,6 @@ public interface IDiscoveredUrlRepository : IRepository<DiscoveredUrl>
         CancellationToken cancellationToken = default);
     Task UpdateStatus(IEnumerable<int> ids, UrlStatus status, IDbTransaction transaction, CancellationToken cancellationToken = default);
     Task<bool> UpdateAfterFetch(int discoveredUrlId, int? fetchId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<int>> GetStuckInFlightIds(TimeSpan olderThan, int limit, CancellationToken cancellationToken = default);
+    Task<int> ResetOrphanedInFlightToIdle(IEnumerable<int> ids, DateTimeOffset nextCrawlAt, CancellationToken cancellationToken = default);
 }
