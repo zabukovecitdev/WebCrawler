@@ -1,7 +1,7 @@
 using System.Web;
 using FluentResults;
 
-namespace SamoBot.Utilities;
+namespace SamoBot.Infrastructure.Utilities;
 
 public static class UrlNormalizer
 {
@@ -9,10 +9,10 @@ public static class UrlNormalizer
     private static readonly HashSet<string> TrackingParameters = new(StringComparer.OrdinalIgnoreCase)
     {
         "utm_source",
-        "utm_medium", 
-        "utm_campaign", 
-        "utm_term", 
-        "utm_content", 
+        "utm_medium",
+        "utm_campaign",
+        "utm_term",
+        "utm_content",
         "utm_id",
         "fbclid",
         "gclid",
@@ -68,7 +68,7 @@ public static class UrlNormalizer
         normalizedUrl = uri.NormalizeAndRemoveTracking();
         return true;
     }
-    
+
     private static Uri Normalize(this Uri uri)
     {
         var builder = new UriBuilder(uri)
@@ -121,7 +121,7 @@ public static class UrlNormalizer
         {
             builder.Port = -1;
         }
-        
+
         if (!string.IsNullOrEmpty(builder.Query))
         {
             var queryParameters = HttpUtility.ParseQueryString(builder.Query);

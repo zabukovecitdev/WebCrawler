@@ -13,7 +13,7 @@ using SamoBot.Infrastructure.Options;
 using SamoBot.Infrastructure.RabbitMQ;
 using SamoBot.Infrastructure.Storage.Abstractions;
 
-namespace Samobot.Crawler.Workers;
+namespace SamoBot.Workers;
 
 public class CrawlerWorker : BackgroundService
 {
@@ -81,7 +81,7 @@ public class CrawlerWorker : BackgroundService
                 {
                     _logger.LogError("Failed to process message: {Errors}", string.Join("; ", result.Errors.Select(e => e.Message)));
                     _channel.BasicNack(args.DeliveryTag, multiple: false, requeue: true);
-                    
+
                     return;
                 }
                 _channel.BasicAck(args.DeliveryTag, multiple: false);
@@ -112,17 +112,17 @@ public class CrawlerWorker : BackgroundService
             if (cancellationToken.IsCancellationRequested)
                 break;
         }
-        
+
         return Task.CompletedTask;
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation("Crawler worker stopping...");
-        
+
         _channel?.Close();
         _connection?.Close();
-        
+
         await base.StopAsync(cancellationToken);
     }
 
@@ -139,7 +139,7 @@ public class CrawlerWorker : BackgroundService
 
         if (uploadResult.IsFailed)
         {
-            _logger.LogError("Failed to upload content for URL {Url}: {Errors}", 
+            _logger.LogError("Failed to upload content for URL {Url}: {Errors}",
                 scheduledUrl.Url, string.Join("; ", uploadResult.Errors.Select(e => e.Message)));
         }
         else if (uploadResult.Value.WasDeferred)
@@ -150,7 +150,7 @@ public class CrawlerWorker : BackgroundService
         {
             _logger.LogInformation("Successfully uploaded content for URL {Url}", scheduledUrl.Url);
         }
-        
+
         return uploadResult;
     }
 }

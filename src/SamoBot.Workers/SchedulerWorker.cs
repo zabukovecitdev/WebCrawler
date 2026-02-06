@@ -2,9 +2,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SamoBot.Infrastructure.Abstractions;
-using SamoBot.Scheduler.Services;
 
-namespace SamoBot.Scheduler.Workers;
+namespace SamoBot.Workers;
 
 public class SchedulerWorker : BackgroundService
 {
@@ -31,9 +30,9 @@ public class SchedulerWorker : BackgroundService
             while (!cancellationToken.IsCancellationRequested)
             {
                 _logger.LogInformation("Scheduler worker running at: {Time}", _timeProvider.GetUtcNow());
-                
+
                 await ProcessUrlsReadyForCrawling(cancellationToken);
-                
+
                 await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
             }
         }
@@ -56,20 +55,20 @@ public class SchedulerWorker : BackgroundService
         try
         {
             var urls = await schedulerService.GetScheduledEntities(10, cancellationToken);
-            
+
             var urlList = urls.ToList();
-            
+
             if (urlList.Count > 0)
             {
                 _logger.LogInformation("Found {Count} URLs ready for crawling", urlList.Count);
-                
+
                 await urlProducer.PublishBatch(urlList, cancellationToken);
-                
+
                 _logger.LogInformation("Published {Count} URLs to scheduled URL queue", urlList.Count);
-                
+
                 foreach (var url in urlList)
                 {
-                    _logger.LogDebug("Published URL for crawling: {Url} (ID: {Id}, Priority: {Priority})", 
+                    _logger.LogDebug("Published URL for crawling: {Url} (ID: {Id}, Priority: {Priority})",
                         url.Url, url.Id, url.Priority);
                 }
             }

@@ -1,4 +1,3 @@
-using System.Data;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -11,7 +10,7 @@ using SamoBot.Infrastructure.Options;
 using SamoBot.Infrastructure.Storage.Abstractions;
 using SamoBot.Infrastructure.Validators;
 
-namespace SamoBot.Parser.Services;
+namespace SamoBot.Services;
 
 public class ParserService : IParserService
 {
@@ -46,9 +45,9 @@ public class ParserService : IParserService
     {
         await using var connection = (NpgsqlConnection)_connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
-        
+
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
-        
+
         try
         {
             using var scope = _serviceProvider.CreateScope();
@@ -83,7 +82,7 @@ public class ParserService : IParserService
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error processing fetch {FetchId} with object {ObjectName}", 
+                    _logger.LogError(ex, "Error processing fetch {FetchId} with object {ObjectName}",
                         fetch.Id, fetch.ObjectName);
                 }
             }
@@ -120,7 +119,7 @@ public class ParserService : IParserService
             var discoveredUrl = await discoveredUrlRepository.GetById(fetch.DiscoveredUrlId, cancellationToken);
             if (discoveredUrl == null)
             {
-                _logger.LogWarning("DiscoveredUrl {DiscoveredUrlId} not found for fetch {FetchId}, skipping", 
+                _logger.LogWarning("DiscoveredUrl {DiscoveredUrlId} not found for fetch {FetchId}, skipping",
                     fetch.DiscoveredUrlId, fetch.Id);
                 return;
             }
@@ -154,8 +153,8 @@ public class ParserService : IParserService
                 if (discoveredUrls.Count != 0)
                 {
                     await _discoveredUrlPublisher.PublishUrlsAsync(discoveredUrls, cancellationToken);
-                    
-                    _logger.LogInformation("Published {Count} discovered URLs from fetch {FetchId}", discoveredUrls.Count(), fetch.Id);
+
+                    _logger.LogInformation("Published {Count} discovered URLs from fetch {FetchId}", discoveredUrls.Count, fetch.Id);
                 }
             }
             else
@@ -166,19 +165,19 @@ public class ParserService : IParserService
             await parsedDocumentRepository.SaveParsedDocument(fetch.Id, parsedDocument, cancellationToken);
 
             await urlFetchRepository.MarkAsParsed(fetch.Id, cancellationToken);
-            
+
             _logger.LogDebug("Saved parsed document and marked fetch {FetchId} as parsed", fetch.Id);
         }
         catch (Minio.Exceptions.ObjectNotFoundException ex)
         {
             _logger.LogWarning(ex, "Object {ObjectName} not found in Minio for fetch {FetchId}, marking as parsed anyway",
                 fetch.ObjectName, fetch.Id);
-            
+
             await urlFetchRepository.MarkAsParsed(fetch.Id, cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, 
+            _logger.LogError(ex,
                 "Error processing fetch {FetchId} from object {ObjectName}",
                 fetch.Id, fetch.ObjectName);
             throw;
@@ -200,7 +199,7 @@ public class ParserService : IParserService
                 continue;
             }
 
-            if (link.Url.Contains(':', StringComparison.OrdinalIgnoreCase) && 
+            if (link.Url.Contains(':', StringComparison.OrdinalIgnoreCase) &&
                 !link.Url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
                 !link.Url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             {

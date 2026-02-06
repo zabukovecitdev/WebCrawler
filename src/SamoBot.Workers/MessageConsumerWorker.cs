@@ -1,12 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SamoBot.Extensions;
 using SamoBot.Infrastructure.Abstractions;
-using SamoBot.Infrastructure.Data;
 using SamoBot.Infrastructure.Data.Abstractions;
+using SamoBot.Infrastructure.Extensions;
 using SamoBot.Infrastructure.Models;
-using SamoBot.Utilities;
+using SamoBot.Infrastructure.Utilities;
 
 namespace SamoBot.Workers;
 
@@ -32,7 +31,7 @@ public class MessageConsumerWorker : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _messageConsumer.MessageReceived += OnMessageReceived;
-        
+
         await _messageConsumer.StartAsync(stoppingToken);
         _logger.LogInformation("Message consumer started.");
 
@@ -75,7 +74,7 @@ public class MessageConsumerWorker : BackgroundService
         if (!UrlNormalizer.TryClean(dirtyUrl, out var normalizedUrl) || normalizedUrl == null)
         {
             _logger.LogWarning("Message is not a valid URL: {Message}", dirtyUrl);
-            
+
             return;
         }
 
@@ -89,7 +88,7 @@ public class MessageConsumerWorker : BackgroundService
         if (exists)
         {
             _logger.LogInformation("URL already exists in database: {Url}", normalizedUrl);
-            
+
             return;
         }
 
@@ -103,14 +102,14 @@ public class MessageConsumerWorker : BackgroundService
         };
 
         var id = await repository.Insert(discoveredUrl, cancellationToken);
-        
+
         _logger.LogInformation("Inserted discovered URL with ID: {Id}, URL: {Url}", id, normalizedUrl);
     }
 
     public override void Dispose()
     {
         _messageConsumer.Dispose();
-        
+
         base.Dispose();
     }
 }

@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using SamoBot.Infrastructure.Data.Abstractions;
 using SamoBot.Infrastructure.Services;
 
-namespace Samobot.Crawler.Workers;
+namespace SamoBot.Workers;
 
 /// <summary>
 /// Background worker that refreshes expiring robots.txt entries to keep cache warm.

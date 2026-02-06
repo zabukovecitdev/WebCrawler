@@ -1,6 +1,6 @@
 using System.Web;
 
-namespace SamoBot.Extensions;
+namespace SamoBot.Infrastructure.Extensions;
 
 public static class UrlExtensions
 {

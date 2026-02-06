@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SamoBot.Parser.Services;
+using SamoBot.Infrastructure.Abstractions;
 
-namespace SamoBot.Parser.Workers;
+namespace SamoBot.Workers;
 
 public class ParserWorker : BackgroundService
 {

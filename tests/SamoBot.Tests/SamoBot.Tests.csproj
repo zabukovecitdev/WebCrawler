@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\SamoBot\SamoBot.csproj" />
+    <ProjectReference Include="..\..\src\SamoBot.Infrastructure\SamoBot.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

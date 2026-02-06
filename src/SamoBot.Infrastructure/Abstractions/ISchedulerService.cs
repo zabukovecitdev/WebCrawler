@@ -1,6 +1,6 @@
 using SamoBot.Infrastructure.Models;
 
-namespace SamoBot.Scheduler.Services;
+namespace SamoBot.Infrastructure.Abstractions;
 
 public interface ISchedulerService
 {

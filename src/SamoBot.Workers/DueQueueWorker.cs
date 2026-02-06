@@ -6,7 +6,7 @@ using SamoBot.Infrastructure.Abstractions;
 using SamoBot.Infrastructure.Models;
 using SamoBot.Infrastructure.Storage.Abstractions;
 
-namespace Samobot.Crawler.Workers;
+namespace SamoBot.Workers;
 
 /// <summary>
 /// Worker that processes URLs from the due queue that are ready to be crawled

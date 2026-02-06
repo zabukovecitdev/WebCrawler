@@ -1,4 +1,4 @@
-namespace SamoBot.Parser.Services;
+namespace SamoBot.Infrastructure.Abstractions;
 
 public interface IParserService
 {
