@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using SamoBot.Infrastructure.Data;
-using Samobot.Domain.Models;
 using SamoBot.Infrastructure.Data.Abstractions;
+using SamoBot.Infrastructure.Models;
 using SamoBot.Infrastructure.Storage.Abstractions;
 
 namespace SamoBot.Infrastructure.Storage.Services;

@@ -1,4 +1,4 @@
-using Samobot.Domain.Models;
+using SamoBot.Infrastructure.Models;
 
 namespace SamoBot.Scheduler.Services;
 

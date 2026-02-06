@@ -1,6 +1,6 @@
-using Samobot.Domain.Enums;
+using Samobot.Infrastructure.Enums;
 
-namespace Samobot.Domain.Models;
+namespace SamoBot.Infrastructure.Models;
 
 public class DiscoveredUrl
 {

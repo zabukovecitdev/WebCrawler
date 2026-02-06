@@ -1,4 +1,12 @@
+# Docker Compose for SamoBot Web Crawler
+#
+# Usage:
+# - Simple deployment: docker-compose up crawler
+# - Full legacy deployment: docker-compose --profile legacy up
+# - Setup only: docker-compose --profile setup up migrations
+
 services:
+  # Database migrations (run once)
   migrations:
     image: samobot-migrations
     build:
@@ -12,8 +20,36 @@ services:
     networks:
       - frontend
     restart: "no"
+    profiles: ["setup"]
 
-  samobot:
+  # Main crawler service (consolidated)
+  crawler:
+    image: samobot-crawler
+    build:
+      context: .
+      dockerfile: src/Samobot.Crawler/Dockerfile
+    environment:
+      - Database__ConnectionString=Host=postgres;Port=5432;Database=samobot;Username=samobot;Password=samobot
+      - Redis__ConnectionString=redis:6379
+      - Minio__Endpoint=minio
+      - Minio__Port=9000
+      - Minio__AccessKey=minioadmin
+      - Minio__SecretKey=minioadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
+    networks:
+      - frontend
+    restart: unless-stopped
+
+  # Legacy services (for current complex architecture)
+  samobot-consumer:
     image: samobot
     build:
       context: .
@@ -33,6 +69,57 @@ services:
         condition: service_completed_successfully
     networks:
       - frontend
+    profiles: ["legacy"]
+
+  scheduler:
+    image: samobot-scheduler
+    build:
+      context: .
+      dockerfile: src/SamoBot.Scheduler/Dockerfile
+    environment:
+      - Database__ConnectionString=Host=postgres;Port=5432;Database=samobot;Username=samobot;Password=samobot
+      - RabbitMQ__HostName=rabbitmq
+      - Redis__ConnectionString=redis:6379
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
+    networks:
+      - frontend
+    profiles: ["legacy"]
+
+  parser:
+    image: samobot-parser
+    build:
+      context: .
+      dockerfile: src/SamoBot.Parser/Dockerfile
+    environment:
+      - Database__ConnectionString=Host=postgres;Port=5432;Database=samobot;Username=samobot;Password=samobot
+      - RabbitMQ__HostName=rabbitmq
+      - Redis__ConnectionString=redis:6379
+      - Minio__Endpoint=minio
+      - Minio__Port=9000
+      - Minio__AccessKey=minioadmin
+      - Minio__SecretKey=minioadmin
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
+    networks:
+      - frontend
+    profiles: ["legacy"]
 
   rabbitmq:
     image: rabbitmq:3.13-management

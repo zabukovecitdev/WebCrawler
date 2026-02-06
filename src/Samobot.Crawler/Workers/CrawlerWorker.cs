@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using Samobot.Domain.Models;
+using SamoBot.Infrastructure.Models;
 using SamoBot.Infrastructure.Options;
 using SamoBot.Infrastructure.RabbitMQ;
 using SamoBot.Infrastructure.Storage.Abstractions;

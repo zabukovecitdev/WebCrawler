@@ -1,7 +1,7 @@
 using FluentResults;
 using Microsoft.Extensions.Logging;
-using Samobot.Domain.Models;
 using SamoBot.Infrastructure.Abstractions;
+using SamoBot.Infrastructure.Models;
 using SamoBot.Infrastructure.Services;
 
 namespace SamoBot.Infrastructure.Policies;

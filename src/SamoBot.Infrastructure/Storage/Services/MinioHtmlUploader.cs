@@ -2,7 +2,7 @@ using System.Net.Mime;
 using Microsoft.Extensions.Logging;
 using Minio;
 using Minio.DataModel.Args;
-using Samobot.Domain.Models;
+using SamoBot.Infrastructure.Models;
 using SamoBot.Infrastructure.Storage.Abstractions;
 
 namespace SamoBot.Infrastructure.Storage.Services;

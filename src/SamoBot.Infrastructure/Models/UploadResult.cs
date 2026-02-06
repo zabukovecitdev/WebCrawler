@@ -1,4 +1,4 @@
-namespace Samobot.Domain.Models;
+namespace SamoBot.Infrastructure.Models;
 
 public class UploadResult
 {

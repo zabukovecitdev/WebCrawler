@@ -1,6 +1,6 @@
 using System.Data;
-using Samobot.Domain.Enums;
-using Samobot.Domain.Models;
+using Samobot.Infrastructure.Enums;
+using SamoBot.Infrastructure.Models;
 
 namespace SamoBot.Infrastructure.Data.Abstractions;
 

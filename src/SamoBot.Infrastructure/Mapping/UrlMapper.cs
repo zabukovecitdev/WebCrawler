@@ -1,5 +1,5 @@
 using Riok.Mapperly.Abstractions;
-using Samobot.Domain.Models;
+using SamoBot.Infrastructure.Models;
 
 namespace SamoBot.Infrastructure.Mapping;
 

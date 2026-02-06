@@ -1,5 +1,5 @@
 using FluentResults;
-using Samobot.Domain.Models;
+using SamoBot.Infrastructure.Models;
 
 namespace SamoBot.Infrastructure.Abstractions;
 

@@ -1,8 +1,8 @@
 using FluentResults;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Samobot.Domain.Models;
 using SamoBot.Infrastructure.Abstractions;
+using SamoBot.Infrastructure.Models;
 using SamoBot.Infrastructure.Options;
 using SamoBot.Infrastructure.Storage.Abstractions;
 

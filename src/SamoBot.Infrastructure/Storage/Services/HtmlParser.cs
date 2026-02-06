@@ -2,7 +2,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using HtmlAgilityPack;
 using Microsoft.Extensions.Logging;
-using Samobot.Domain.Models;
+using SamoBot.Infrastructure.Models;
 using SamoBot.Infrastructure.Storage.Abstractions;
 
 namespace SamoBot.Infrastructure.Storage.Services;

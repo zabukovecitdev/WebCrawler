@@ -1,10 +1,10 @@
 using System.Data;
 using Dapper;
-using Samobot.Domain.Enums;
-using Samobot.Domain.Models;
 using SamoBot.Infrastructure.Constants;
 using SamoBot.Infrastructure.Data.Abstractions;
+using Samobot.Infrastructure.Enums;
 using SamoBot.Infrastructure.Extensions;
+using SamoBot.Infrastructure.Models;
 using SqlKata.Execution;
 
 namespace SamoBot.Infrastructure.Data;

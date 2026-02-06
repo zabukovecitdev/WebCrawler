@@ -3,8 +3,8 @@ using FluentAssertions;
 using FluentResults;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Samobot.Domain.Models;
 using SamoBot.Infrastructure.Abstractions;
+using SamoBot.Infrastructure.Models;
 using SamoBot.Infrastructure.Options;
 using SamoBot.Infrastructure.Policies;
 using SamoBot.Infrastructure.Services;
@@ -281,7 +281,7 @@ public class PolitenessPolicyTests
             return Task.FromResult(Result.Ok<int?>(null));
         }
 
-        public Task<Result<Samobot.Domain.Models.RobotsTxt>> GetRobotsTxt(string host, CancellationToken cancellationToken = default)
+        public Task<Result<Infrastructure.Models.RobotsTxt>> GetRobotsTxt(string host, CancellationToken cancellationToken = default)
         {
             throw new NotSupportedException();
         }

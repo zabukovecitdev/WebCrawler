@@ -1,4 +1,4 @@
-using Samobot.Domain.Enums;
+using Samobot.Infrastructure.Enums;
 
 namespace SamoBot.Infrastructure.Extensions;
 

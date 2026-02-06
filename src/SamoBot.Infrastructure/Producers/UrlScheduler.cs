@@ -3,9 +3,9 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
-using Samobot.Domain.Models;
 using SamoBot.Infrastructure.Abstractions;
 using SamoBot.Infrastructure.Mapping;
+using SamoBot.Infrastructure.Models;
 using SamoBot.Infrastructure.Options;
 using SamoBot.Infrastructure.RabbitMQ;
 

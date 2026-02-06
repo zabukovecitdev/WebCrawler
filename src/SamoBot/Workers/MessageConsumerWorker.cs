@@ -1,11 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Samobot.Domain.Models;
 using SamoBot.Extensions;
 using SamoBot.Infrastructure.Abstractions;
 using SamoBot.Infrastructure.Data;
 using SamoBot.Infrastructure.Data.Abstractions;
+using SamoBot.Infrastructure.Models;
 using SamoBot.Utilities;
 
 namespace SamoBot.Workers;

@@ -1,11 +1,9 @@
-using System.Data;
 using Microsoft.Extensions.Logging;
 using Npgsql;
-using Samobot.Domain.Enums;
-using Samobot.Domain.Models;
-using SamoBot.Infrastructure.Data;
 using SamoBot.Infrastructure.Data.Abstractions;
 using SamoBot.Infrastructure.Database;
+using Samobot.Infrastructure.Enums;
+using SamoBot.Infrastructure.Models;
 
 namespace SamoBot.Scheduler.Services;
 

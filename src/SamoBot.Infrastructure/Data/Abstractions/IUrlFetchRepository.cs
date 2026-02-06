@@ -1,5 +1,5 @@
 using System.Data;
-using Samobot.Domain.Models;
+using SamoBot.Infrastructure.Models;
 
 namespace SamoBot.Infrastructure.Data.Abstractions;
 

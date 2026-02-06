@@ -1,7 +1,7 @@
 using FluentResults;
 using Microsoft.Extensions.Logging;
-using RobotsTxtModel = Samobot.Domain.Models.RobotsTxt;
-using Samobot.Domain.Models;
+using SamoBot.Infrastructure.Models;
+using RobotsTxtModel = SamoBot.Infrastructure.Models.RobotsTxt;
 
 namespace SamoBot.Infrastructure.Parsers;
 

@@ -1,9 +1,9 @@
 using System.Data;
 using Dapper;
-using Samobot.Domain.Models;
 using SamoBot.Infrastructure.Constants;
 using SamoBot.Infrastructure.Data.Abstractions;
 using SamoBot.Infrastructure.Extensions;
+using SamoBot.Infrastructure.Models;
 using SqlKata.Execution;
 
 namespace SamoBot.Infrastructure.Data;

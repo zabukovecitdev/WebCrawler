@@ -2,8 +2,8 @@ using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Samobot.Domain.Models;
 using SamoBot.Infrastructure.Abstractions;
+using SamoBot.Infrastructure.Models;
 using SamoBot.Infrastructure.Storage.Abstractions;
 
 namespace Samobot.Crawler.Workers;

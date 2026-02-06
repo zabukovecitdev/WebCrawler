@@ -1,5 +1,5 @@
 using FluentResults;
-using RobotsTxtModel = Samobot.Domain.Models.RobotsTxt;
+using RobotsTxtModel = SamoBot.Infrastructure.Models.RobotsTxt;
 
 namespace SamoBot.Infrastructure.Services;
 

@@ -1,6 +1,6 @@
 using FluentResults;
-using Samobot.Domain.Models;
 using SamoBot.Infrastructure.Abstractions;
+using SamoBot.Infrastructure.Models;
 
 namespace SamoBot.Infrastructure.Policies;
 

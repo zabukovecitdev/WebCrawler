@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Polly;
-using Samobot.Domain.Models;
+using SamoBot.Infrastructure.Models;
 using SamoBot.Infrastructure.Storage.Abstractions;
 
 namespace SamoBot.Infrastructure.Storage.Services;

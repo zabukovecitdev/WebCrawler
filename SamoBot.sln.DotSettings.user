@@ -29,4 +29,5 @@
     &lt;TestId&gt;xUnit::CF4C2AD6-5D15-4E53-AFC1-F9A9B22D4B7C::net10.0::SamoBot.Tests.UrlNormalizerTests&lt;/TestId&gt;
     &lt;TestId&gt;xUnit::CF4C2AD6-5D15-4E53-AFC1-F9A9B22D4B7C::net10.0::SamoBot.Tests.RedisCachePolitenessTests&lt;/TestId&gt;
   &lt;/TestAncestor&gt;
-&lt;/SessionState&gt;</s:String></wpf:ResourceDictionary>
+&lt;/SessionState&gt;</s:String>
+	</wpf:ResourceDictionary>

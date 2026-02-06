@@ -33,8 +33,4 @@
     <PackageReference Include="RobotsTxtCore" Version="3.0.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Samobot.Domain\Samobot.Domain.csproj" />
-  </ItemGroup>
-
 </Project>

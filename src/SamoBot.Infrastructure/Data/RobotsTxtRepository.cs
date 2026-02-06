@@ -1,8 +1,8 @@
 using System.Text.Json;
-using RobotsTxtModel = Samobot.Domain.Models.RobotsTxt;
-using Samobot.Domain.Models;
+using RobotsTxtModel = SamoBot.Infrastructure.Models.RobotsTxt;
 using SamoBot.Infrastructure.Constants;
 using SamoBot.Infrastructure.Data.Abstractions;
+using SamoBot.Infrastructure.Models;
 using SqlKata.Execution;
 
 namespace SamoBot.Infrastructure.Data;
