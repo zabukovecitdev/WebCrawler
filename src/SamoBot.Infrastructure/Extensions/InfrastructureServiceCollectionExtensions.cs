@@ -12,11 +12,13 @@ using SamoBot.Infrastructure.Cache;
 using SamoBot.Infrastructure.Data;
 using SamoBot.Infrastructure.Data.Abstractions;
 using SamoBot.Infrastructure.Database;
+using Meilisearch;
 using SamoBot.Infrastructure.Options;
 using SamoBot.Infrastructure.Parsers;
 using SamoBot.Infrastructure.Policies;
 using SamoBot.Infrastructure.Producers;
 using SamoBot.Infrastructure.Services;
+using SamoBot.Infrastructure.Services.Abstractions;
 using SamoBot.Infrastructure.Storage.Abstractions;
 using SamoBot.Infrastructure.Storage.Services;
 using SamoBot.Infrastructure.Validators;
@@ -48,6 +50,8 @@ public static class InfrastructureServiceCollectionExtensions
             configuration.GetSection(CrawlerOptions.SectionName));
         services.Configure<RedisOptions>(
             configuration.GetSection(RedisOptions.SectionName));
+        services.Configure<MeilisearchOptions>(
+            configuration.GetSection(MeilisearchOptions.SectionName));
 
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
@@ -122,6 +126,12 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IDiscoveredUrlRepository, DiscoveredUrlRepository>();
         services.AddScoped<IUrlFetchRepository, UrlFetchRepository>();
         services.AddScoped<IParsedDocumentRepository, ParsedDocumentRepository>();
+        services.AddSingleton<MeilisearchClient>(sp =>
+        {
+            var options = sp.GetRequiredService<IOptions<MeilisearchOptions>>().Value;
+            return new MeilisearchClient(options.Host, options.ApiKey);
+        });
+        services.AddScoped<IIndexerService, IndexService>();
         services.AddScoped<IUrlFetchService, UrlFetchService>();
         services.AddSingleton<IHtmlContentValidator, HtmlContentValidator>();
         services.AddScoped<IMinioHtmlUploader, MinioHtmlUploader>();
@@ -192,7 +202,6 @@ public static class InfrastructureServiceCollectionExtensions
             });
         
         services.AddHttpClient();
-        services.AddHostedService<MinioBucketInitializationService>();
 
         return services;
     }

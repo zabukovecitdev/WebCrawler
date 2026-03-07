@@ -20,6 +20,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SamoBot.Parser", "src\SamoB
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SamoBot.Scheduler", "src\SamoBot.Scheduler\SamoBot.Scheduler.csproj", "{FDF6ECB5-FCF0-419D-AD84-3FD5B670A787}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SamoBot.Indexer", "src\SamoBot.Indexer\SamoBot.Indexer.csproj", "{2E97F815-C404-4877-9CF7-A882E7C66175}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -150,6 +152,18 @@ Global
 		{FDF6ECB5-FCF0-419D-AD84-3FD5B670A787}.Release|x64.Build.0 = Release|Any CPU
 		{FDF6ECB5-FCF0-419D-AD84-3FD5B670A787}.Release|x86.ActiveCfg = Release|Any CPU
 		{FDF6ECB5-FCF0-419D-AD84-3FD5B670A787}.Release|x86.Build.0 = Release|Any CPU
+		{2E97F815-C404-4877-9CF7-A882E7C66175}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E97F815-C404-4877-9CF7-A882E7C66175}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E97F815-C404-4877-9CF7-A882E7C66175}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2E97F815-C404-4877-9CF7-A882E7C66175}.Debug|x64.Build.0 = Debug|Any CPU
+		{2E97F815-C404-4877-9CF7-A882E7C66175}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2E97F815-C404-4877-9CF7-A882E7C66175}.Debug|x86.Build.0 = Debug|Any CPU
+		{2E97F815-C404-4877-9CF7-A882E7C66175}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E97F815-C404-4877-9CF7-A882E7C66175}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2E97F815-C404-4877-9CF7-A882E7C66175}.Release|x64.ActiveCfg = Release|Any CPU
+		{2E97F815-C404-4877-9CF7-A882E7C66175}.Release|x64.Build.0 = Release|Any CPU
+		{2E97F815-C404-4877-9CF7-A882E7C66175}.Release|x86.ActiveCfg = Release|Any CPU
+		{2E97F815-C404-4877-9CF7-A882E7C66175}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

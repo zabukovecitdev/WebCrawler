@@ -33,8 +33,6 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-      migrations:
-        condition: service_completed_successfully
     networks:
       - frontend
     restart: unless-stopped
@@ -184,11 +182,43 @@ services:
     networks:
       - frontend
 
+  meilisearch:
+    image: getmeili/meilisearch:v1.11
+    ports:
+      - "7700:7700"
+    environment:
+      MEILI_MASTER_KEY: masterKey
+      MEILI_ENV: development
+    volumes:
+      - meilisearch_data:/meili_data
+    networks:
+      - frontend
+
+  indexer:
+    image: samobot-indexer
+    build:
+      context: .
+      dockerfile: src/SamoBot.Indexer/Dockerfile
+    environment:
+      - Database__ConnectionString=Host=postgres;Port=5432;Database=samobot;Username=samobot;Password=samobot
+      - Meilisearch__Host=http://meilisearch:7700
+      - Meilisearch__ApiKey=masterKey
+      - Meilisearch__IndexName=parsed_documents
+    depends_on:
+      postgres:
+        condition: service_healthy
+      meilisearch:
+        condition: service_started
+    networks:
+      - frontend
+    restart: unless-stopped
+
 volumes:
   rabbitmq_data:
   postgres_data:
   minio_data:
   redis_data:
+  meilisearch_data:
 
 networks:
   frontend:

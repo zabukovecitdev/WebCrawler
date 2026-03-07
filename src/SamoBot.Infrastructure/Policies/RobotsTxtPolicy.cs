@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using SamoBot.Infrastructure.Abstractions;
 using SamoBot.Infrastructure.Models;
 using SamoBot.Infrastructure.Services;
+using SamoBot.Infrastructure.Services.Abstractions;
 
 namespace SamoBot.Infrastructure.Policies;
 

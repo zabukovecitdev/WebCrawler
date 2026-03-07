@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using SamoBot.Consumers;
 using SamoBot.Infrastructure.Abstractions;
 using SamoBot.Infrastructure.Extensions;
+using SamoBot.Parser.Extensions;
 using SamoBot.Services;
 using SamoBot.Workers;
 
@@ -19,7 +20,7 @@ builder.Configuration
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddSingleton<IMessageConsumer, UrlDiscoveryConsumer>();
 builder.Services.AddScoped<ISchedulerService, SchedulerService>();
-builder.Services.AddScoped<IParserService, ParserService>();
+builder.Services.AddParserServices();
 
 builder.Services.AddHostedService<MessageConsumerWorker>();
 builder.Services.AddHostedService<CrawlerWorker>();

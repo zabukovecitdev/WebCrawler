@@ -1,7 +1,7 @@
 using FluentResults;
 using RobotsTxtModel = SamoBot.Infrastructure.Models.RobotsTxt;
 
-namespace SamoBot.Infrastructure.Services;
+namespace SamoBot.Infrastructure.Services.Abstractions;
 
 public interface IRobotsTxtService
 {

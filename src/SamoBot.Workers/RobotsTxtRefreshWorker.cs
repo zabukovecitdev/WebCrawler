@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SamoBot.Infrastructure.Data.Abstractions;
 using SamoBot.Infrastructure.Services;
+using SamoBot.Infrastructure.Services.Abstractions;
 
 namespace SamoBot.Workers;
 

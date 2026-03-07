@@ -8,5 +8,6 @@ internal static class TableNames
         public const string UrlFetches = "UrlFetches";
         public const string ParsedDocuments = "ParsedDocuments";
         public const string RobotsTxt = "RobotsTxt";
+        public const string IndexJobs = "IndexJobs";
     }
 }

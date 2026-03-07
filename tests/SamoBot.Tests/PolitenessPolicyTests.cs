@@ -8,6 +8,7 @@ using SamoBot.Infrastructure.Models;
 using SamoBot.Infrastructure.Options;
 using SamoBot.Infrastructure.Policies;
 using SamoBot.Infrastructure.Services;
+using SamoBot.Infrastructure.Services.Abstractions;
 
 namespace SamoBot.Tests;
 

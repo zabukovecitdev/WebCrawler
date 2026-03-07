@@ -3,23 +3,19 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SamoBot.Infrastructure.Extensions;
-using SamoBot.Infrastructure.Storage.Services;
-using SamoBot.Parser.Extensions;
 using SamoBot.Workers;
 
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddJsonFile($"secrets.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables();
 
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddHostedService<MinioBucketInitializationService>();
-builder.Services.AddParserServices();
-builder.Services.AddHostedService<ParserWorker>();
-builder.Services.AddHostedService<RobotsTxtRefreshWorker>();
+builder.Services.AddHostedService<IndexerWorker>();
 
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();

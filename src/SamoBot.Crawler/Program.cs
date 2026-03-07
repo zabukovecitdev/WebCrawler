@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SamoBot.Infrastructure.Extensions;
+using SamoBot.Infrastructure.Storage.Services;
 using SamoBot.Workers;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -14,6 +15,7 @@ builder.Configuration
     .AddEnvironmentVariables();
 
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddHostedService<MinioBucketInitializationService>();
 builder.Services.AddHostedService<DueQueueWorker>();
 builder.Services.AddHostedService<CrawlerWorker>();
 

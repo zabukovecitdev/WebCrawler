@@ -10,7 +10,7 @@ using SamoBot.Infrastructure.Options;
 using SamoBot.Infrastructure.Storage.Abstractions;
 using SamoBot.Infrastructure.Validators;
 
-namespace SamoBot.Services;
+namespace SamoBot.Parser.Services;
 
 public class ParserService : IParserService
 {
@@ -115,7 +115,6 @@ public class ParserService : IParserService
         MemoryStream? memoryStream = null;
         try
         {
-            // Get the source URL for resolving relative links
             var discoveredUrl = await discoveredUrlRepository.GetById(fetch.DiscoveredUrlId, cancellationToken);
             if (discoveredUrl == null)
             {

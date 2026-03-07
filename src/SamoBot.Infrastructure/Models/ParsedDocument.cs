@@ -60,3 +60,5 @@ public class RobotsDirectives
     public bool NoSnippet { get; set; }
     public bool None { get; set; }
 }
+
+public record UnindexedParsedDocument(int Id, int UrlFetchId, ParsedDocument Document);

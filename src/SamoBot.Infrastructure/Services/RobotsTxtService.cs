@@ -6,6 +6,7 @@ using RobotsTxtModel = SamoBot.Infrastructure.Models.RobotsTxt;
 using SamoBot.Infrastructure.Abstractions;
 using SamoBot.Infrastructure.Data.Abstractions;
 using SamoBot.Infrastructure.Parsers;
+using SamoBot.Infrastructure.Services.Abstractions;
 using SamoBot.Infrastructure.Storage.Abstractions;
 
 namespace SamoBot.Infrastructure.Services;
@@ -104,7 +105,6 @@ public class RobotsTxtService : IRobotsTxtService
             return Result.Ok(dbResult.Value);
         }
 
-        // Tier 3: Fetch from HTTP
         _logger.LogInformation("Cache miss for robots.txt, fetching from HTTP: {Host}", host);
         return await FetchAndCache(host, cancellationToken);
     }
