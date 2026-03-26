@@ -234,6 +234,7 @@ public static class InfrastructureServiceCollectionExtensions
         });
 
         services.AddScoped<IIndexerService, IndexService>();
+        services.AddScoped<ISearchService, SearchService>();
 
         return services;
     }
