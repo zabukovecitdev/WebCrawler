@@ -16,4 +16,8 @@ public class DiscoveredUrl
     public int Priority { get; set; }
     public int? LastFetchId { get; set; }
     public DateTimeOffset? StatusUpdatedAt { get; set; }
+    public int? CrawlJobId { get; set; }
+    public int Depth { get; set; }
+    public bool UseJsRendering { get; set; }
+    public bool RespectRobots { get; set; } = true;
 }

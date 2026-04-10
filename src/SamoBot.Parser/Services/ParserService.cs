@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using SamoBot.Infrastructure.Abstractions;
+using SamoBot.Infrastructure.Data;
 using SamoBot.Infrastructure.Data.Abstractions;
 using SamoBot.Infrastructure.Database;
 using SamoBot.Infrastructure.Graph.Abstractions;
@@ -22,6 +23,7 @@ public class ParserService : IParserService
     private readonly IMinioHtmlUploader _htmlUploader;
     private readonly IDbConnectionFactory _connectionFactory;
     private readonly IDiscoveredUrlPublisher _discoveredUrlPublisher;
+    private readonly ICrawlJobRepository _crawlJobRepository;
     private readonly IMetaRobotsValidator _metaRobotsValidator;
     private const int BatchSize = 10;
 
@@ -32,6 +34,7 @@ public class ParserService : IParserService
         IMinioHtmlUploader htmlUploader,
         IDbConnectionFactory connectionFactory,
         IDiscoveredUrlPublisher discoveredUrlPublisher,
+        ICrawlJobRepository crawlJobRepository,
         IMetaRobotsValidator metaRobotsValidator)
     {
         _logger = logger;
@@ -40,6 +43,7 @@ public class ParserService : IParserService
         _htmlUploader = htmlUploader;
         _connectionFactory = connectionFactory;
         _discoveredUrlPublisher = discoveredUrlPublisher;
+        _crawlJobRepository = crawlJobRepository;
         _metaRobotsValidator = metaRobotsValidator;
     }
 
@@ -154,12 +158,15 @@ public class ParserService : IParserService
 
             if (shouldFollowLinks)
             {
-                var discoveredUrls = ExtractAbsoluteUrls(parsedDocument.Links, sourceUri).ToList();
-                if (discoveredUrls.Count != 0)
+                var linkUrls = ExtractAbsoluteUrls(parsedDocument.Links, sourceUri).ToList();
+                if (linkUrls.Count != 0)
                 {
-                    await _discoveredUrlPublisher.PublishUrlsAsync(discoveredUrls, cancellationToken);
-
-                    _logger.LogInformation("Published {Count} discovered URLs from fetch {FetchId}", discoveredUrls.Count, fetch.Id);
+                    var messages = await BuildDiscoveryMessagesAsync(discoveredUrl, linkUrls, cancellationToken);
+                    if (messages.Count != 0)
+                    {
+                        await _discoveredUrlPublisher.PublishDiscoveriesAsync(messages, cancellationToken);
+                        _logger.LogInformation("Published {Count} discovered URLs from fetch {FetchId}", messages.Count, fetch.Id);
+                    }
                 }
             }
             else
@@ -249,5 +256,30 @@ public class ParserService : IParserService
         }
 
         return absoluteUrls;
+    }
+
+    private async Task<List<UrlDiscoveryMessage>> BuildDiscoveryMessagesAsync(
+        DiscoveredUrl parent,
+        List<string> absoluteUrls,
+        CancellationToken cancellationToken)
+    {
+        var childDepth = parent.Depth + 1;
+        if (parent.CrawlJobId is { } jobId)
+        {
+            var job = await _crawlJobRepository.GetById(jobId, cancellationToken);
+            if (job != null && job.MaxDepth.HasValue && childDepth > job.MaxDepth.Value)
+            {
+                return [];
+            }
+        }
+
+        return absoluteUrls.Select(u => new UrlDiscoveryMessage
+        {
+            Url = u,
+            CrawlJobId = parent.CrawlJobId,
+            Depth = childDepth,
+            UseJsRendering = parent.UseJsRendering,
+            RespectRobots = parent.RespectRobots
+        }).ToList();
     }
 }

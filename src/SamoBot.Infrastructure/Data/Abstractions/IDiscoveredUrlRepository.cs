@@ -14,4 +14,6 @@ public interface IDiscoveredUrlRepository : IRepository<DiscoveredUrl>
     Task<bool> UpdateAfterFetch(int discoveredUrlId, int? fetchId, CancellationToken cancellationToken = default);
     Task<IEnumerable<int>> GetStuckInFlightIds(TimeSpan olderThan, int limit, CancellationToken cancellationToken = default);
     Task<int> ResetOrphanedInFlightToIdle(IEnumerable<int> ids, DateTimeOffset nextCrawlAt, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<DiscoveredUrl>> GetByCrawlJobId(int crawlJobId, int limit, int offset, CancellationToken cancellationToken = default);
+    Task<int> CountByCrawlJobId(int crawlJobId, CancellationToken cancellationToken = default);
 }

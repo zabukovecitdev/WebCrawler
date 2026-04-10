@@ -196,7 +196,14 @@ public class PolitenessPolicyTests
         var timeProvider = new FixedTimeProvider(DateTimeOffset.UnixEpoch);
         var crawlOptions = Options.Create(options ?? new CrawlerOptions());
         var fakeRobotsTxtService = new FakeRobotsTxtService();
-        return new PolitenessPolicy(cache, timeProvider, crawlOptions, fakeRobotsTxtService, NullLogger<PolitenessPolicy>.Instance);
+        return new PolitenessPolicy(cache, timeProvider, crawlOptions, fakeRobotsTxtService, new NullCrawlTelemetry(),
+            NullLogger<PolitenessPolicy>.Instance);
+    }
+
+    private sealed class NullCrawlTelemetry : ICrawlTelemetryService
+    {
+        public Task PublishAsync(int? crawlJobId, string eventType, object payload, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     private sealed class FixedTimeProvider : TimeProvider

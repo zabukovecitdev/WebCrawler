@@ -35,7 +35,11 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
                 entity.Url,
                 entity.NormalizedUrl,
                 DiscoveredAt = entity.DiscoveredAt.ToUniversalTime(),
-                entity.Priority
+                entity.Priority,
+                entity.CrawlJobId,
+                entity.Depth,
+                entity.UseJsRendering,
+                entity.RespectRobots
             }, cancellationToken: cancellationToken);
 
         return id;
@@ -57,7 +61,11 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
                 DiscoveredAt = entity.DiscoveredAt.ToUniversalTime(),
                 entity.Priority,
                 entity.LastFetchId,
-                StatusUpdatedAt = entity.StatusUpdatedAt?.ToUniversalTime()
+                StatusUpdatedAt = entity.StatusUpdatedAt?.ToUniversalTime(),
+                entity.CrawlJobId,
+                entity.Depth,
+                entity.UseJsRendering,
+                entity.RespectRobots
             }, cancellationToken: cancellationToken);
 
         return affected > 0;
@@ -198,5 +206,24 @@ public class DiscoveredUrlRepository(QueryFactory queryFactory, TimeProvider tim
             .UpdateAsync(updateFields, cancellationToken: cancellationToken);
 
         return affected > 0;
+    }
+
+    public async Task<IReadOnlyList<DiscoveredUrl>> GetByCrawlJobId(int crawlJobId, int limit, int offset,
+        CancellationToken cancellationToken = default)
+    {
+        var rows = await queryFactory.Query(TableNames.Database.DiscoveredUrls)
+            .Where(nameof(DiscoveredUrl.CrawlJobId), crawlJobId)
+            .OrderByDesc(nameof(DiscoveredUrl.Id))
+            .Offset(offset)
+            .Limit(limit)
+            .GetAsync<DiscoveredUrl>(cancellationToken: cancellationToken);
+        return rows.ToList();
+    }
+
+    public async Task<int> CountByCrawlJobId(int crawlJobId, CancellationToken cancellationToken = default)
+    {
+        return await queryFactory.Query(TableNames.Database.DiscoveredUrls)
+            .Where(nameof(DiscoveredUrl.CrawlJobId), crawlJobId)
+            .CountAsync<int>(cancellationToken: cancellationToken);
     }
 }

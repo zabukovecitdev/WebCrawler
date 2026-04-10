@@ -1,7 +1,25 @@
+# Build output
 bin/
 obj/
 /packages/
+publish/
+
+# JetBrains Rider
 riderModule.iml
 /_ReSharper.Caches/
+.idea/
+*.DotSettings.user
 
-.idea
+# Visual Studio
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Node
+node_modules/
+dist/
+
+# Terraform state (sensitive)
+*.tfstate
+*.tfstate.backup

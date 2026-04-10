@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -69,11 +70,14 @@ public class MessageConsumerWorker : BackgroundService
         }
     }
 
-    private async Task ProcessMessage(string dirtyUrl, CancellationToken cancellationToken = default)
+    private async Task ProcessMessage(string rawMessage, CancellationToken cancellationToken = default)
     {
+        var discovery = TryParseDiscovery(rawMessage);
+        var dirtyUrl = discovery?.Url ?? rawMessage;
+
         if (!UrlNormalizer.TryClean(dirtyUrl, out var normalizedUrl) || normalizedUrl == null)
         {
-            _logger.LogWarning("Message is not a valid URL: {Message}", dirtyUrl);
+            _logger.LogWarning("Message is not a valid URL: {Message}", rawMessage);
 
             return;
         }
@@ -82,8 +86,34 @@ public class MessageConsumerWorker : BackgroundService
 
         using var scope = _serviceScopeFactory.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IDiscoveredUrlRepository>();
+        var crawlJobs = scope.ServiceProvider.GetService<ICrawlJobRepository>();
 
-        // TODO: This check could be more optimised with Bloom filter
+        if (discovery?.CrawlJobId is { } jobId && crawlJobs != null)
+        {
+            var job = await crawlJobs.GetById(jobId, cancellationToken);
+            if (job == null)
+            {
+                _logger.LogWarning("Crawl job {JobId} not found for discovery message", jobId);
+                return;
+            }
+
+            if (job.MaxDepth.HasValue && discovery.Depth > job.MaxDepth.Value)
+            {
+                _logger.LogDebug("Skipping URL beyond MaxDepth: {Url} depth {Depth}", dirtyUrl, discovery.Depth);
+                return;
+            }
+
+            if (job.MaxUrls.HasValue)
+            {
+                var count = await repository.CountByCrawlJobId(jobId, cancellationToken);
+                if (count >= job.MaxUrls.Value)
+                {
+                    _logger.LogDebug("Skipping URL: job {JobId} reached MaxUrls", jobId);
+                    return;
+                }
+            }
+        }
+
         var exists = await repository.Exists(normalizedUrl.AbsoluteUri, cancellationToken);
         if (exists)
         {
@@ -98,12 +128,33 @@ public class MessageConsumerWorker : BackgroundService
             Host = normalizedUrl.Host,
             NormalizedUrl = normalizedUrl.AbsoluteUri,
             DiscoveredAt = _timeProvider.GetUtcNow().ToUniversalTime(),
-            Priority = normalizedUrl.GetUrlSegmentsLength() + normalizedUrl.GetQueryParameterCount()
+            Priority = normalizedUrl.GetUrlSegmentsLength() + normalizedUrl.GetQueryParameterCount(),
+            CrawlJobId = discovery?.CrawlJobId,
+            Depth = discovery?.Depth ?? 0,
+            UseJsRendering = discovery?.UseJsRendering ?? false,
+            RespectRobots = discovery?.RespectRobots ?? true
         };
 
         var id = await repository.Insert(discoveredUrl, cancellationToken);
 
         _logger.LogInformation("Inserted discovered URL with ID: {Id}, URL: {Url}", id, normalizedUrl);
+    }
+
+    private static UrlDiscoveryMessage? TryParseDiscovery(string rawMessage)
+    {
+        if (string.IsNullOrWhiteSpace(rawMessage) || !rawMessage.TrimStart().StartsWith('{'))
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<UrlDiscoveryMessage>(rawMessage);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public override void Dispose()

@@ -28,7 +28,7 @@ jobs:
           - name: samo-bot
             dockerfile: src/SamoBot/Dockerfile
           - name: samobot-crawler
-            dockerfile: src/Samobot.Crawler/Dockerfile
+            dockerfile: src/SamoBot.Crawler/Dockerfile
           - name: samobot-migrations
             dockerfile: src/SamoBot.Migrations/Dockerfile
           - name: samo-bot-scheduler

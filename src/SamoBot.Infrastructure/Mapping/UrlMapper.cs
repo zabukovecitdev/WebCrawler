@@ -17,12 +17,20 @@ public static partial class UrlMapper
     [MapperIgnoreSource(nameof(DiscoveredUrl.FailCount))]
     [MapperIgnoreSource(nameof(DiscoveredUrl.DiscoveredAt))]
     [MapperIgnoreSource(nameof(DiscoveredUrl.LastFetchId))]
+    [MapperIgnoreSource(nameof(DiscoveredUrl.CrawlJobId))]
+    [MapperIgnoreSource(nameof(DiscoveredUrl.Depth))]
+    [MapperIgnoreSource(nameof(DiscoveredUrl.UseJsRendering))]
+    [MapperIgnoreSource(nameof(DiscoveredUrl.RespectRobots))]
     private static partial ScheduledUrl MapToScheduledUrl(DiscoveredUrl discoveredUrl);
 
     private static ScheduledUrl ToScheduledUrl(DiscoveredUrl discoveredUrl)
     {
         var scheduledUrl = MapToScheduledUrl(discoveredUrl);
         scheduledUrl.Url = discoveredUrl.NormalizedUrl ?? discoveredUrl.Url;
+        scheduledUrl.CrawlJobId = discoveredUrl.CrawlJobId;
+        scheduledUrl.Depth = discoveredUrl.Depth;
+        scheduledUrl.UseJsRendering = discoveredUrl.UseJsRendering;
+        scheduledUrl.RespectRobots = discoveredUrl.RespectRobots;
         return scheduledUrl;
     }
     

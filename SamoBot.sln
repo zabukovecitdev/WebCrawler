@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SamoBot", "src\SamoBot\SamoBot.csproj", "{71E30817-3F6B-4411-B38C-BA27DCD0E13C}"
 EndProject
@@ -23,6 +23,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SamoBot.Indexer", "src\SamoBot.Indexer\SamoBot.Indexer.csproj", "{2E97F815-C404-4877-9CF7-A882E7C66175}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SamoBot.Mcp", "SamoBot.Mcp\SamoBot.Mcp.csproj", "{B9F62D4E-3B8C-4B21-B9F4-888C8E946190}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SamoBot.Api", "src\SamoBot.Api\SamoBot.Api.csproj", "{479C25F2-8F45-46C2-B859-E1B6E52CC76B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -178,8 +182,23 @@ Global
 		{B9F62D4E-3B8C-4B21-B9F4-888C8E946190}.Release|x64.Build.0 = Release|Any CPU
 		{B9F62D4E-3B8C-4B21-B9F4-888C8E946190}.Release|x86.ActiveCfg = Release|Any CPU
 		{B9F62D4E-3B8C-4B21-B9F4-888C8E946190}.Release|x86.Build.0 = Release|Any CPU
+		{479C25F2-8F45-46C2-B859-E1B6E52CC76B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{479C25F2-8F45-46C2-B859-E1B6E52CC76B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{479C25F2-8F45-46C2-B859-E1B6E52CC76B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{479C25F2-8F45-46C2-B859-E1B6E52CC76B}.Debug|x64.Build.0 = Debug|Any CPU
+		{479C25F2-8F45-46C2-B859-E1B6E52CC76B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{479C25F2-8F45-46C2-B859-E1B6E52CC76B}.Debug|x86.Build.0 = Debug|Any CPU
+		{479C25F2-8F45-46C2-B859-E1B6E52CC76B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{479C25F2-8F45-46C2-B859-E1B6E52CC76B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{479C25F2-8F45-46C2-B859-E1B6E52CC76B}.Release|x64.ActiveCfg = Release|Any CPU
+		{479C25F2-8F45-46C2-B859-E1B6E52CC76B}.Release|x64.Build.0 = Release|Any CPU
+		{479C25F2-8F45-46C2-B859-E1B6E52CC76B}.Release|x86.ActiveCfg = Release|Any CPU
+		{479C25F2-8F45-46C2-B859-E1B6E52CC76B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{479C25F2-8F45-46C2-B859-E1B6E52CC76B} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

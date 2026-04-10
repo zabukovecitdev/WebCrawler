@@ -17,6 +17,7 @@ public class PolitenessPolicy : ICrawlPolicy
     private readonly TimeProvider _timeProvider;
     private readonly CrawlerOptions _crawlerOptions;
     private readonly IRobotsTxtService _robotsTxtService;
+    private readonly ICrawlTelemetryService _telemetry;
     private readonly ILogger<PolitenessPolicy> _logger;
 
     public PolitenessPolicy(
@@ -24,12 +25,14 @@ public class PolitenessPolicy : ICrawlPolicy
         TimeProvider timeProvider,
         IOptions<CrawlerOptions> crawlerOptions,
         IRobotsTxtService robotsTxtService,
+        ICrawlTelemetryService telemetry,
         ILogger<PolitenessPolicy> logger)
     {
         _cache = cache;
         _timeProvider = timeProvider;
         _crawlerOptions = crawlerOptions.Value;
         _robotsTxtService = robotsTxtService;
+        _telemetry = telemetry;
         _logger = logger;
     }
 
@@ -71,6 +74,15 @@ public class PolitenessPolicy : ICrawlPolicy
 
             _logger.LogInformation("Enqueued URL {Url} for host {Host} due at {DueTime}",
                 url, host, DateTimeOffset.FromUnixTimeMilliseconds(dueTimestamp));
+
+            await _telemetry.PublishAsync(scheduledUrl.CrawlJobId, "PolitenessDeferred",
+                new
+                {
+                    url,
+                    discoveredUrlId = scheduledUrl.Id,
+                    host,
+                    delayMs = Math.Max(0, dueTimestamp - now)
+                }, cancellationToken);
 
             return Result.Ok(new UrlContentMetadata
             {

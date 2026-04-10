@@ -62,6 +62,8 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IParsedDocumentRepository, ParsedDocumentRepository>();
         services.AddScoped<IIndexJobRepository, IndexJobRepository>();
         services.AddScoped<IIndexJobService, IndexJobService>();
+        services.AddScoped<ICrawlJobRepository, CrawlJobRepository>();
+        services.AddScoped<ICrawlJobEventRepository, CrawlJobEventRepository>();
 
         return services;
     }
@@ -218,6 +220,21 @@ public static class InfrastructureServiceCollectionExtensions
             });
 
         services.AddHttpClient();
+
+        services.AddCrawlControlPlane(configuration);
+
+        return services;
+    }
+
+    public static IServiceCollection AddCrawlControlPlane(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<CrawlTelemetryOptions>(
+            configuration.GetSection(CrawlTelemetryOptions.SectionName));
+        services.Configure<ChromeRenderingOptions>(
+            configuration.GetSection(ChromeRenderingOptions.SectionName));
+        services.AddScoped<ICrawlTelemetryService, CrawlTelemetryService>();
+        services.AddSingleton<IJsRenderService, JsRenderService>();
+        services.AddScoped<ICrawlJobService, CrawlJobService>();
 
         return services;
     }

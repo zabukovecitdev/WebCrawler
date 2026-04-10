@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-border: hsl(240 6% 90%);
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(240 10% 4%);
+  --color-muted: hsl(240 5% 96%);
+  --color-muted-foreground: hsl(240 4% 46%);
+  --color-primary: hsl(240 6% 10%);
+  --color-primary-foreground: hsl(0 0% 98%);
+  --color-destructive: hsl(0 72% 51%);
+  --color-destructive-foreground: hsl(0 0% 98%);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--color-background);
+  color: var(--color-foreground);
+}

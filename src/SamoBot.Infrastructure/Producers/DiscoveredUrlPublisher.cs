@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using SamoBot.Infrastructure.Abstractions;
+using SamoBot.Infrastructure.Models;
 using SamoBot.Infrastructure.Options;
 using SamoBot.Infrastructure.RabbitMQ;
 
@@ -61,10 +62,16 @@ public class DiscoveredUrlPublisher : IDiscoveredUrlPublisher, IDisposable
 
     public Task PublishUrlsAsync(IEnumerable<string> urls, CancellationToken cancellationToken = default)
     {
+        var messages = urls.Select(u => new UrlDiscoveryMessage { Url = u });
+        return PublishDiscoveriesAsync(messages, cancellationToken);
+    }
+
+    public Task PublishDiscoveriesAsync(IEnumerable<UrlDiscoveryMessage> discoveries, CancellationToken cancellationToken = default)
+    {
         Initialize();
 
-        var urlList = urls.ToList();
-        if (urlList.Count == 0)
+        var list = discoveries.ToList();
+        if (list.Count == 0)
         {
             return Task.CompletedTask;
         }
@@ -72,17 +79,18 @@ public class DiscoveredUrlPublisher : IDiscoveredUrlPublisher, IDisposable
         var published = 0;
         var unixTimestamp = _timeProvider.GetUtcNow().ToUnixTimeSeconds();
 
-        foreach (var url in urlList)
+        foreach (var msg in list)
         {
             try
             {
-                var body = Encoding.UTF8.GetBytes(url);
+                var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(msg));
 
                 var properties = _channel!.CreateBasicProperties();
                 properties.Headers = new Dictionary<string, object>
                 {
                     { "version", unixTimestamp }
                 };
+                properties.ContentType = "application/json";
 
                 _channel.BasicPublish(
                     exchange: _queueOptions.ExchangeName,
@@ -94,8 +102,7 @@ public class DiscoveredUrlPublisher : IDiscoveredUrlPublisher, IDisposable
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to publish discovered URL: {Url}", url);
-                // Continue with other URLs even if one fails
+                _logger.LogError(ex, "Failed to publish discovered URL: {Url}", msg.Url);
             }
         }
 
